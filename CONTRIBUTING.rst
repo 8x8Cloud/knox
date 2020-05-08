@@ -8,7 +8,7 @@ little bit helps, and credit will always be given.
 Bug reports
 ===========
 
-When `reporting a bug <https://git.8x8.com/ljohnson/knox/issues>`_ please include:
+When `reporting a bug <https://github.com/8x8cloud/knox/issues>`_ please include:
 
     * Your operating system name and version.
     * Any details about your local setup that might be helpful in troubleshooting.
@@ -24,7 +24,7 @@ articles, and such.
 Feature requests and feedback
 =============================
 
-The best way to send feedback is to file an issue at https://git.8x8.com/ljohnson/knox/issues.
+The best way to send feedback is to file an issue at https://github.com/8x8cloud/knox/issues.
 
 If you are proposing a feature:
 
@@ -37,11 +37,11 @@ Development
 
 To set up `knox` for local development:
 
-1. Fork `knox <https://git.8x8.com/ljohnson/knox>`_
+1. Fork `knox <https://github.com/8x8cloud/knox>`_
    (look for the "Fork" button).
 2. Clone your fork locally::
 
-    git clone git@git.8x8.com:ljohnson/knox.git
+    git clone git@github.com/8x8cloud/knox.git
 
 3. Create a branch for local development::
 
