@@ -48,7 +48,7 @@ default_context:
     pypi_disable_upload:       'yes'
     release_date:              'today'
     repo_hosting:              'other domain not listed'
-    repo_hosting_domain:       'git.8x8.com'
+    repo_hosting_domain:       'github.com'
     repo_name:                 'knox'
     repo_username:             'ljohnson'
     requiresio:                'yes'
