@@ -27,28 +27,17 @@ Why does this file exist, and why __main__? For more info, read:
 """
 import sys
 
-import backend
-import certificate
-import config
 from loguru import logger
+
+from .knox import Knox
 
 logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
 logger.debug(f'Invoking __main__.py for {__name__}')
 
 
-class Knox():
-    """Composite class for Knox package"""
-
-    def __init__(self, ):
-        """Constructor for Knox"""
-        self.settings = config.Conf()
-        self.backend = backend.Store()
-        self.certificate = certificate.Cert()
-
-
 @logger.catch()
 def main():
-    knox = Knox()
+    knox = Knox("common_name")
     logger.debug(f'Knox settings version: {knox.settings.version}')
 
 

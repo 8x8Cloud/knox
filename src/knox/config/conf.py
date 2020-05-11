@@ -19,19 +19,27 @@ from dynaconf.loaders.vault_loader import list_envs
 """
 import shortuuid
 from dynaconf import settings
+from dynaconf.utils.files import SEARCHTREE
 from loguru import logger
 
 
 class Conf():
     """Manage application settings"""
+    _version: str
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Constructor for Settings"""
-        self.version = shortuuid.uuid()
-        self.conf = settings
-        logger.debug("loaded constructor Settings()")
-        logger.debug(self.conf.dynaconf_banner)
+        self._version = shortuuid.uuid()
+        self._settings = settings
+        logger.debug(self._settings.dynaconf_banner)
         logger.debug("Learn more at http://github.com/rochacbruno/dynaconf")
+        logger.debug(f'dynaconf search tree: {SEARCHTREE}')
+        logger.debug(f'dynaconf loaded? {self._settings.configured}')
 
-    def version(self):
-        return self.version
+    @property
+    def version(self) -> str:
+        return self._version
+
+    @property
+    def settings(self) -> settings:
+        return self._settings

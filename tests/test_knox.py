@@ -1,7 +1,7 @@
 
 from click.testing import CliRunner
 
-from knox.cli import main
+from knox.config.cli import main
 
 
 def test_main():

@@ -17,7 +17,20 @@ limitations under the License."""
 
 
 class Cert():
-    """"""
+    """Object representation of a TLS certificate"""
+    _common_name: str
+    _data: str
 
-    def __init__(self, ):
+    def __init__(self, common_name) -> None:
         """Constructor for Cert"""
+        self._common_name = common_name
+
+    def store_path(self) -> str:
+        """Generate a backend store path based on the certificates common name
+        www.8x8.com becomes /com/8x8/www
+        """
+        domainsplit = self._common_name.split('.')
+        return "/".join(reversed(domainsplit))
+
+    def __str__(self) -> str:
+        return self._data
