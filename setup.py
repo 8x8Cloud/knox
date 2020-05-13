@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='knox',
-    version='0.0.0',
+    version='0.0.2',
     license='Apache-2.0',
     description='Certificate management utilities with Vault backend',
     long_description='%s\n%s' % (
@@ -71,10 +71,14 @@ setup(
     },
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     keywords=[
-        'vault', 'hashicorp'
+        'vault','hashicorp','ssl','certificates'
     ],
     install_requires=[
         'click',
+        'hvac',
+        'loguru',
+        'dynaconf',
+        'shortuuid'
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={
@@ -84,7 +88,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'knox = knox.cli:main',
+	    'knox = knox:main'
         ]
     },
 )
