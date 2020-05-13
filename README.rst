@@ -1,5 +1,5 @@
 ===========
-Knox v0.0.1
+Knox v0.0.2
 ===========
 
 **TL;DR;** A set of certificate management utilities using a default Vault backend.
