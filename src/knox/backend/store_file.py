@@ -13,32 +13,20 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-limitations under the License.
-
-
-Entrypoint module, in case you use `python -mknox`.
-
-
-Why does this file exist, and why __main__? For more info, read:
-
-- https://www.python.org/dev/peps/pep-0338/
-- https://docs.python.org/2/using/cmdline.html#cmdoption-m
-- https://docs.python.org/3/using/cmdline.html#cmdoption-m
-"""
-import sys
+limitations under the License."""
+import os  # noqa: F401
 
 from loguru import logger
 
-from .knox import Knox
-
-logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
+from .store_engine import StoreEngine
 
 
-@logger.catch()
-def main():
-    knox = Knox("common_name")
-    logger.debug(f'Knox instance id: {knox.conf.version}')
+class FileStoreEngine(StoreEngine):
+    """"""
+    __file_home: str
 
-
-if __name__ == "__main__":
-    main()
+    def __init__(self, settings) -> None:
+        """Constructor for FileStore"""
+        super().__init__()
+        self.__file_home = settings.FILE_HOME
+        logger.debug(f'📂 File backend configuration loaded. {self.__file_home}')
