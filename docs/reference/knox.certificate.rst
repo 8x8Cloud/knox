@@ -1,17 +1,12 @@
-knox
-====
+knox.certificate
+================
 
-.. testsetup::
-
-    from knox import *
-
-.. automodule:: knox
+.. automodule:: knox.certificate
     :members:
 
-.. autoclass:: knox.Knox
+.. autoclass:: Cert
     :members:
     :private-members:
     :special-members:
     :inherited-members:
     :undoc-members:
-

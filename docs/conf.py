@@ -24,8 +24,8 @@ version = release = '0.0.2'
 pygments_style = 'trac'
 templates_path = ['.']
 extlinks = {
-    'issue': ('https://git.8x8.com/ljohnson/knox/issues/%s', '#'),
-    'pr': ('https://git.8x8.com/ljohnson/knox/pull/%s', 'PR #'),
+    'issue': ('https://github.com/8x8cloud/knox/issues/%s', '#'),
+    'pr': ('https://github.com/8x8cloud/knox/pull/%s', 'PR #'),
 }
 # on_rtd is whether we are on readthedocs.org
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'

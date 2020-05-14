@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 from loguru import logger
 
-from .conf import Conf
+from .conf import Conf  # noqa: F401
 
 logger.debug(f'Invoking __init__.py for {__name__}')
-logger.debug(f'Importing class {Conf}')

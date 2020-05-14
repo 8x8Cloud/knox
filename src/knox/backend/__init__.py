@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 from loguru import logger
 
-from .store import Store
+from .store import Store  # noqa: F401
+from .store import StoreObject  # noqa: F401
 
 logger.debug(f'Invoking __init__.py for {__name__}')
-logger.debug(f'Importing class {Store}')
