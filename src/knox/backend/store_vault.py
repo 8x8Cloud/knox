@@ -43,7 +43,7 @@ class VaultStoreEngine(StoreEngine):
         return self.__vault_client.is_authenticated()
 
     def close(self) -> bool:
-        return self.__vault_client.close()
+        return self.__vault_client.logout()
 
     def __del__(self):
         return self.close()
