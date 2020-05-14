@@ -14,65 +14,48 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+from loguru import logger
+
+from .store_engine import StoreEngine
+from .store_file import FileStoreEngine
+from .store_object import StoreObject
+from .store_vault import VaultStoreEngine
 
 
-class StoreObject():
-    """Metadata interface for objects being persisted in a backend"""
-    _name: str
-    _path: str
-    _body: str
+class Store:
+    """Abstract class to generalize access to the different stores"""
+    _engine: StoreEngine
+    _engine_map = {
+        'vault': VaultStoreEngine,
+        'file': FileStoreEngine
+    }
 
-    def __init__(self, name: str, path: str, body: str) -> None:
-        """Constructor for StoreObject"""
-        self._name = name
-        self._path = path
-        self._body = body
+    def __init__(self, settings) -> None:
+        """Dynamically load StoreEngine type from .env
+        KNOX_STORE_ENGINE=[vault,file]
+        """
+        try:
+            self._engine = self._engine_map.get(settings.STORE_ENGINE).__call__(settings)
+        except Exception:
+            logger.error(f'StoreEngineFailure KNOX_STORE_ENGINE={settings.STORE_ENGINE} is invalid. Valid options are {self._engine_map.keys()}')  # noqa: E501
 
-    @property
-    def name(self) -> str:
-        """Object name"""
-        return self._name
+        self._engine.settings = settings
+        logger.debug(f'Loaded {self._engine.__class__}')
 
-    @property
-    def path(self) -> str:
-        """Path attribute"""
-        return self._path
+    def save(self, obj: StoreObject) -> bool:
+        """Save the given object to persistence"""
+        return self._engine.write(obj)
 
-    @property
-    def body(self) -> str:
-        """Content to persist, typically JSON"""
-        return self._body
+    def get(self, path: str, name: str) -> StoreObject:
+        """Given path read object"""
+        return self._engine.read(path, name)
 
-    @path.setter
-    def path(self, value: str) -> None:
-        self._path = value
-
-    @body.setter
-    def body(self, value: str) -> None:
-        self._body = value
-
-
-class Store():
-    """The persistence strategy for storing the certificates"""
-
-    def __init__(self):
-        """Constructor for Store"""
-
-    def open(self):
-        """Initialize access to the persistence"""
+    def delete(self, path: str, name: str) -> bool:
+        """Remove the object from the store"""
+        """[TODO 5/13/20] ljohnson implement soft delete and hard deletes"""
         pass
 
-    def close(self):
-        """Close access to the persistence"""
-
-    def install(self):
-        """Ensure the store is configured properly"""
-        pass
-
-    def read(self, path: str) -> StoreObject:
-        """Read from the store"""
-        pass
-
-    def write(self, path: str, obj: StoreObject) -> bool:
-        """Write to the store"""
+    def find(self, path: str, name: str) -> [StoreObject]:
+        """Given a path, return collection of all objects"""
+        """[TODO 5/13/20] ljohnson implement glob searching /path/**/path2/*"""
         pass

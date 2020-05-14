@@ -21,19 +21,23 @@ from . import config as config
 
 class Knox():
     """Composite class for Knox package"""
-    _settings: config.Conf
+    _conf: config.Conf
     _store: backend.Store
     _cert: cert.Cert
 
     def __init__(self, common_name: str) -> None:
         """Constructor for Knox"""
-        self._settings = config.Conf()
-        self._store = backend.Store()
+        self._conf = config.Conf()
+        self._store = backend.Store(self._conf.settings)
         self._cert = cert.Cert(common_name)
 
     @property
-    def settings(self) -> config.Conf:
-        return self._settings
+    def settings(self) -> config.Conf.settings:
+        return self._conf.settings
+
+    @property
+    def conf(self) -> config.Conf:
+        return self._conf
 
     @property
     def store(self) -> backend.Store:
