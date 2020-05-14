@@ -1,17 +1,12 @@
-knox
-====
+knox.config
+===========
 
-.. testsetup::
-
-    from knox import *
-
-.. automodule:: knox
+.. automodule:: knox.config
     :members:
 
-.. autoclass:: knox.Knox
+.. autoclass:: Conf
     :members:
     :private-members:
     :special-members:
     :inherited-members:
     :undoc-members:
-
