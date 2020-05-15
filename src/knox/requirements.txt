@@ -1,4 +1,5 @@
 click==7.1.2
+hvac==0.10.1
 shortuuid==1.0.1
 dynaconf==2.2.3
 loguru==0.4.1
