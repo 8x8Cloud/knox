@@ -20,3 +20,6 @@ global-exclude *.py[cod] __pycache__/* *.so *.dylib
 
 # added by check_manifest.py
 recursive-include src *.py
+
+# added by check_manifest.py
+include Dockerfile
