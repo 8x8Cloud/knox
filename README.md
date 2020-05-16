@@ -1,4 +1,4 @@
-===========
+
 Knox v0.0.4
 ===========
 
@@ -13,16 +13,16 @@ The name is derived from "Fort Knox" the safest place to store valuables in hist
 
 Primary components used are Python, Hashicorp Vault, Let's Encrypt and certbot.
 
-`Let’s Encrypt <https://letsencrypt.org>`_ is a certificate authority managed by the `Internet Security Research Group (ISRG) <https://www.abetterinternet.org/about/>`_. It utilizes the `Automated Certificate Management Environment (ACME) <https://github.com/ietf-wg-acme/acme/>`_ to automatically deploy free SSL certificates that are trusted by nearly all major browsers. `The certificate compatibility list can be found here <https://letsencrypt.org/docs/certificate-compatibility/>`_. Lets Encrypt has revolutionized the distribution of certificates for public facing servers.
+[Let’s Encrypt](<https://letsencrypt.org>) is a certificate authority managed by the [Internet Security Research Group (ISRG)](<https://www.abetterinternet.org/about/>). It utilizes the [Automated Certificate Management Environment (ACME)](<https://github.com/ietf-wg-acme/acme/>) to automatically deploy free SSL certificates that are trusted by nearly all major browsers. [The certificate compatibility list can be found here](<https://letsencrypt.org/docs/certificate-compatibility/>). Lets Encrypt has revolutionized the distribution of certificates for public facing servers.
 
-`Hashicorp Vault <https://www.vaultproject.io/>`_ is a tool for storing secrets. It has a `PKI Secret Engine <https://www.vaultproject.io/docs/secrets/pki/index.html>`_ backend which allows to use it as a certificate authority in an internal public key infrastructure deployment. Until now, Vault is best suited for issuing private certificates.
+[Hashicorp Vault](<https://www.vaultproject.io/>) is a tool for storing secrets. It has a [PKI Secret Engine](<https://www.vaultproject.io/docs/secrets/pki/index.html>) backend which allows to use it as a certificate authority in an internal public key infrastructure deployment. Until now, Vault is best suited for issuing private certificates.
 
 Let's Encrypt and Hashicorp Vault are complementary in certificate management.
 
 Installation
 ============
 
-::
+To get started::
 
     pip install knox
 
@@ -33,6 +33,8 @@ You can also install the in-development version with::
 Or run it as a container::
 
     docker run 8x8cloud/knox
+    
+See [Dynaconf](https://dynaconf.readthedocs.io/en/latest/) for how the configuration is read in. At its simplest just add environment variables into a `.env` file.
 
 
 Metadata
@@ -106,64 +108,26 @@ https://knox.readthedocs.io/
 Development
 ===========
 
-This project was initialized using a very cool python project templating tool called `cookiecutter-pylibrary <https://github.com/ionelmc/cookiecutter-pylibrary>`_ from `Ionel Cristian Mărieș <https://github.com/ionelmc>`_. Definitely check it out to see all the tools available and good usage docs.
+This project was initialized using a very cool python project templating tool called [cookiecutter-pylibrary](https://github.com/ionelmc/cookiecutter-pylibrary) from [Ionel Cristian Mărieș](https://github.com/ionelmc). Definitely check it out to see all the tools available and good usage docs.
 
 To execute everything run::
 
-  tox
+	tox
 
 To see all the tox environments::
 
-  tox -l
+	tox -l
 
 To only build the docs::
 
-  tox -e docs
+	tox -e docs
 
 To build and verify that the built package is proper and other code QA checks::
 
-  tox -e check
+	tox -e check
 
-To update `Travis CI <https://travis-ci.org>`_ configuration::
+To update [Travis CI](https://travis-ci.org) configuration::
 
-    tox -e bootstrap
-
-
-Note, to combine the coverage data from all the tox environments run:
-
-.. list-table::
-    :widths: 10 90
-    :stub-columns: 1
-
-    - - Windows
-      - ::
-
-            set PYTEST_ADDOPTS=--cov-append
-            tox
-
-    - - Other
-      - ::
-
-            PYTEST_ADDOPTS=--cov-append tox
+	tox -e bootstrap
 
 
-
-
-.. _Travis-CI: http://travis-ci.org/
-.. _Tox: https://tox.readthedocs.io/en/latest/
-.. _Sphinx: http://sphinx-doc.org/
-.. _Coveralls: https://coveralls.io/
-.. _ReadTheDocs: https://readthedocs.org/
-.. _Setuptools: https://pypi.org/project/setuptools
-.. _Pytest: http://pytest.org/
-.. _AppVeyor: http://www.appveyor.com/
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _Nose: http://nose.readthedocs.org/
-.. _isort: https://pypi.org/project/isort
-.. _bumpversion: https://pypi.org/project/bumpversion
-.. _Codecov: http://codecov.io/
-.. _Landscape: https://landscape.io/
-.. _Scrutinizer: https://scrutinizer-ci.com/
-.. _Codacy: https://codacy.com/
-.. _CodeClimate: https://codeclimate.com/
-.. _`requires.io`: https://requires.io/
