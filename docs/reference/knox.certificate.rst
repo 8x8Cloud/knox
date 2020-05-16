@@ -5,8 +5,9 @@ knox.certificate
     :members:
 
 .. autoclass:: Cert
+    :show-inheritance:
     :members:
     :private-members:
-    :special-members:
     :inherited-members:
     :undoc-members:
+
