@@ -23,3 +23,6 @@ recursive-include src *.py
 
 # added by check_manifest.py
 include Dockerfile
+
+# added by check_manifest.py
+include *.md

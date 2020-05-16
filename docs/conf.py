@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 import os
 
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
@@ -13,7 +14,10 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
 ]
-source_suffix = '.rst'
+source_parsers = {
+    '.md': 'recommonmark.parser.CommonMarkParser'
+}
+source_suffix = ['.rst', '.md']
 master_doc = 'index'
 project = 'knox'
 year = '2020'
