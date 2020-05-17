@@ -33,7 +33,7 @@ You can also install the in-development version with::
 Or run it as a container::
 
     docker run 8x8cloud/knox
-    
+
 See [Dynaconf](https://dynaconf.readthedocs.io/en/latest/) for how the configuration is read in. At its simplest just add environment variables into a `.env` file.
 
 
@@ -140,19 +140,19 @@ You will need a [Vault](https://hub.docker.com/_/vault) server running locally::
 	-e 'VAULT_DEV_ROOT_TOKEN_ID=knox' \
 	-d --name=dev-vault \
 	vault
-	
+
 	>docker ps
 	CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                              NAMES
 	d89fbfd340c3        vault               "docker-entrypoint.s…"   5 hours ago         Up 5 hours          0.0.0.0:8200-8201->8200-8201/tcp   dev-vault
-	
-Set the token ID and container name to your preferences. 
+
+Set the token ID and container name to your preferences.
 Verify you can talk to vault using the vault cli::
 
 	>export VAULT_ADDR=http://0.0.0.0:8200
 	>export VAULT_TOKEN=knox
-	
+
 	>vault status
-	
+
 	Key             Value
 	---             -----
 	Seal Type       shamir
@@ -165,10 +165,10 @@ Verify you can talk to vault using the vault cli::
 	Cluster ID      043bfc14-09b1-6033-1c3b-8aeace3adc60
 	HA Enabled      false
 
-Update your knox configuration using `.env` 
+Update your knox configuration using `.env`::
 
 	ENVVAR_PREFIX_FOR_DYNACONF=KNOX
-	
+
 	KNOX_TEMP=/tmp
 	KNOX_STORE_ENGINE=vault
 	KNOX_VAULT_URL=http://0.0.0.0:8200
@@ -177,5 +177,4 @@ Update your knox configuration using `.env`
 	KNOX_FILE_HOME=./test
 
 
-	
-	
+
