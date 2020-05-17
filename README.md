@@ -1,5 +1,5 @@
 
-Knox v0.0.6
+Knox v0.0.7
 ===========
 .. start-badges
 .. raw:: html
