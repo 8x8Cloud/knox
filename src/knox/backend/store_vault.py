@@ -91,6 +91,7 @@ class VaultRESTClient:
 
     def get_mounts(self) -> json:
         """Refresh set of mounts from Vault
+
             :return: JSON
         """
         self.__mounts = self._get("/v1/sys/mounts")
@@ -159,7 +160,12 @@ class VaultStoreEngine(StoreEngine):
         return self.close()
 
     def write(self, obj: StoreObject) -> bool:
-        """Given a StoreObject, store it into vault using mount/path/name == body,info"""
+        """Given a StoreObject, store it into vault using mount/path/name == body,info
+
+            :param obj: The StoreObject to persist
+            :type obj: StoreObject
+            :return: bool
+        """
         client = self.__vault_client
         mp = self.__vault_mount
 
@@ -174,6 +180,14 @@ class VaultStoreEngine(StoreEngine):
             logger.error('Failed to write StoreObject to Vault')
 
     def read(self, path: str, name: str) -> StoreObject:
+        """Using the provided path and name retrieve the data from the store and create a new StoreObject
+
+            :param path: Store path to the object
+            :type path: str
+            :param name: Name of the object to retrieve
+            :type name: str
+            :return: StoreObject
+        """
         client = self.__vault_client
         mp = self.__vault_mount
         obj: StoreObject

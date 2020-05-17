@@ -32,6 +32,13 @@ knox.backend
     :inherited-members:
     :undoc-members:
 
+.. autoclass:: VaultRESTClient
+    :show-inheritance:
+    :members:
+    :private-members:
+    :inherited-members:
+    :undoc-members:
+
 .. autoclass:: FileStoreEngine
     :show-inheritance:
     :members:

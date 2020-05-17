@@ -1,3 +1,7 @@
+.. warning::
+
+    This python project is not fully baked yet. When a full major version is bumped we will consider it functional. Until then enjoy reading the docs.
+
 .. include:: ../README.md
 
 Note, to combine the coverage data from all the tox environments run:

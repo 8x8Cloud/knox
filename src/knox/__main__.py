@@ -32,7 +32,7 @@ from loguru import logger
 from .certificate import Cert  # noqa: F401
 from .knox import Knox
 
-logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
+logger.add(sys.stdout, format="{time} {level} {message}", level="INFO")
 
 
 @logger.catch()

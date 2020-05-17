@@ -1,10 +1,30 @@
 
 Knox v0.0.6
 ===========
+.. start-badges
+.. raw:: html
 
-**TL;DR;** A set of certificate management utilities using a default Vault backend.
+    <p align="center">
+        <!--
+        <a href="https://pypi.python.org/pypi/knox"><img alt="Pypi version" src="https://img.shields.io/pypi/v/knox.svg"></a>
+        -->
+        <a href="https://pypi.python.org/pypi/knox"><img alt="Python versions" src="https://img.shields.io/badge/python-3.5%2B%20%7C%20PyPy-blue.svg"></a>
+        <a href="https://knox.readthedocs.io/en/stable/index.html"><img alt="Documentation" src="https://img.shields.io/readthedocs/knox.svg"></a>
+        <a href="https://travis-ci.org/8x8Cloud/knox"><img alt="Build status" src="https://img.shields.io/travis/8x8Cloud/knox/develop.svg"></a>
+        <!--
+        <a href="https://codecov.io/gh/8x8Cloud/knox/branch/master"><img alt="Coverage" src="https://img.shields.io/codecov/c/github/8x8Cloud/knox/master.svg"></a>
+        <a href="https://www.codacy.com/app/delgan-py/knox/dashboard"><img alt="Code quality" src="https://img.shields.io/codacy/grade/4d97edb1bb734a0d9a684a700a84f555.svg"></a>
+        -->
+        <a href="https://github.com/8x8Cloud/knox/blob/master/LICENSE"><img alt="License" src="https://img.shields.io/github/license/8x8Cloud/knox.svg"></a>
+    </p>
+.. end-badges
 
-* Free software: Apache Software License 2.0
+
+
+.. note::
+
+    **TL;DR;** A set of certificate management utilities using a default Vault backend.
+
 
 What is knox
 ============
