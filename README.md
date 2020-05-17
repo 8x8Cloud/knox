@@ -131,3 +131,51 @@ To update [Travis CI](https://travis-ci.org) configuration::
 	tox -e bootstrap
 
 
+You will need a [Vault](https://hub.docker.com/_/vault) server running locally::
+
+	>docker run \
+	--cap-add=IPC_LOCK \
+	-p 8201:8201 \
+	-p 8200:8200 \
+	-e 'VAULT_DEV_ROOT_TOKEN_ID=knox' \
+	-d --name=dev-vault \
+	vault
+	
+	>docker ps
+	CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                              NAMES
+	d89fbfd340c3        vault               "docker-entrypoint.s…"   5 hours ago         Up 5 hours          0.0.0.0:8200-8201->8200-8201/tcp   dev-vault
+	
+Set the token ID and container name to your preferences. 
+Verify you can talk to vault using the vault cli::
+
+	>export VAULT_ADDR=http://0.0.0.0:8200
+	>export VAULT_TOKEN=knox
+	
+	>vault status
+	
+	Key             Value
+	---             -----
+	Seal Type       shamir
+	Initialized     true
+	Sealed          false
+	Total Shares    1
+	Threshold       1
+	Version         1.4.1
+	Cluster Name    vault-cluster-31da8ea9
+	Cluster ID      043bfc14-09b1-6033-1c3b-8aeace3adc60
+	HA Enabled      false
+
+Update your knox configuration using `.env` 
+
+	ENVVAR_PREFIX_FOR_DYNACONF=KNOX
+	
+	KNOX_TEMP=/tmp
+	KNOX_STORE_ENGINE=vault
+	KNOX_VAULT_URL=http://0.0.0.0:8200
+	KNOX_VAULT_TOKEN="knox"
+	KNOX_VAULT_MOUNT="certificates"
+	KNOX_FILE_HOME=./test
+
+
+	
+	

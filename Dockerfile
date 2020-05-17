@@ -45,4 +45,5 @@ COPY /src /app
 
 WORKDIR /app
 
-CMD ["python", "-m knox"]
+ENTRYPOINT ["/usr/local/bin/python", "-m", "knox"]
+#CMD ["python", "-m knox"]

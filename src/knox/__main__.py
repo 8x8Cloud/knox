@@ -29,6 +29,7 @@ import sys
 
 from loguru import logger
 
+from .certificate import Cert  # noqa: F401
 from .knox import Knox
 
 logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
@@ -36,8 +37,11 @@ logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
 
 @logger.catch()
 def main():
-    knox = Knox("common_name")
+    knox = Knox()
+    # cert = Cert("common_name")
     logger.debug(f'Knox instance id: {knox.conf.version}')
+    # load a certificate
+    # save it to store
 
 
 if __name__ == "__main__":

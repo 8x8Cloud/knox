@@ -15,7 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 from . import backend as backend
-from . import certificate as cert
+from . import certificate as cert  # noqa: F401
 from . import config as config
 
 
@@ -23,13 +23,11 @@ class Knox():
     """Composite class for Knox package"""
     _conf: config.Conf
     _store: backend.Store
-    _cert: cert.Cert
 
-    def __init__(self, common_name: str) -> None:
+    def __init__(self) -> None:
         """Constructor for Knox"""
         self._conf = config.Conf()
         self._store = backend.Store(self._conf.settings)
-        self._cert = cert.Cert(common_name)
 
     @property
     def settings(self) -> config.Conf.settings:
@@ -42,7 +40,3 @@ class Knox():
     @property
     def store(self) -> backend.Store:
         return self._store
-
-    @property
-    def cert(self) -> cert.Cert:
-        return self._cert
