@@ -18,7 +18,7 @@ from .store_object import StoreObject
 
 
 class StoreEngine:
-    """The persistence strategy for storing the certificates"""
+    """The abstract persistence strategy for storing the certificates """
     settings: object
 
     def __init__(self) -> None:
@@ -32,7 +32,7 @@ class StoreEngine:
         """Close access to the persistence"""
         pass
 
-    def install(self) -> bool:
+    def initialize(self) -> bool:
         """Ensure the store is configured properly"""
         pass
 
@@ -42,4 +42,8 @@ class StoreEngine:
 
     def write(self, obj: StoreObject) -> bool:
         """Write to the store"""
+        pass
+
+    def delete(self, path: str, name: str) -> bool:
+        """Delete from the store"""
         pass

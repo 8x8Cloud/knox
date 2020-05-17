@@ -31,8 +31,11 @@ class Store:
     }
 
     def __init__(self, settings) -> None:
-        """Dynamically load StoreEngine type from .env
+        """Dynamically load StoreEngine type from .env via Dynaconf
         KNOX_STORE_ENGINE=[vault,file]
+
+        :param settings: Dynaconf LazySettings
+        :type settings: dynaconf.LazySettings
         """
         try:
             self._engine = self._engine_map.get(settings.STORE_ENGINE).__call__(settings)
@@ -53,7 +56,7 @@ class Store:
     def delete(self, path: str, name: str) -> bool:
         """Remove the object from the store"""
         """[TODO 5/13/20] ljohnson implement soft delete and hard deletes"""
-        pass
+        return self._engine.delete(path, name)
 
     def find(self, path: str, name: str) -> [StoreObject]:
         """Given a path, return collection of all objects"""
