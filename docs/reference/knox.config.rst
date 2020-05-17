@@ -8,7 +8,6 @@ knox.config
     :show-inheritance:
     :members:
     :private-members:
-    :special-members:
     :inherited-members:
     :undoc-members:
 
