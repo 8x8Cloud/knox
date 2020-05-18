@@ -29,3 +29,6 @@ include *.md
 
 # added by check_manifest.py
 recursive-include examples *.pem
+
+# added by check_manifest.py
+include *.txt
