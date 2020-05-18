@@ -27,6 +27,6 @@ class DnsEngine():
         """Validate the credentials set for specific DNS provider"""
         pass
 
-    def get_provider_args(self) -> str:
+    def get_provider_args(self, common_name) -> str:
         """Generate certbot commands based on provider name"""
         pass

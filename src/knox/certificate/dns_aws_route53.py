@@ -74,6 +74,6 @@ class DnsProviderAWS(DnsEngine):
             logger.error("Valid credentials not found for provider {}".format(self._provider))
             return False
 
-    def get_provider_args(self) -> str:
-        """Return provider specific certbot argument"""
-        return " --route53 "
+    def get_provider_args(self, common_name) -> str:
+        """Return provider specific certbot commands"""
+        return "certbot --certonly --route53 -d {}".format(common_name)

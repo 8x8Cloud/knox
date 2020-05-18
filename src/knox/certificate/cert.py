@@ -26,7 +26,6 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
-
 from ..backend import StoreObject
 
 
