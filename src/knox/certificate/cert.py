@@ -17,7 +17,6 @@ limitations under the License."""
 import ast
 import json
 from binascii import hexlify
-
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -43,6 +42,12 @@ class Cert(StoreObject):
 
     PEM = 1
     DER = 2
+
+
+class Cert():
+    """Object representation of a TLS certificate and DNS Engines"""
+    _common_name: str
+    _data: str
 
     def __init__(self, common_name=None) -> None:
         """Constructor for Cert"""

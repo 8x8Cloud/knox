@@ -1,0 +1,34 @@
+{
+    "dns": [
+        {
+            "aws": {
+                "required_credentials": [
+                    "AWS_ACCESS_KEY_ID",
+                    "AWS_SECRET_ACCESS_KEY"
+                ],
+                "domains": [
+                    "acceptance.cloud.8x8.com",
+                    "staging.cloud.8x8.com"
+                ]
+            },
+            "cloudflare": {
+                "required_crednetials": [
+                    "CF_API_EMAIL",
+                    "CF_API_KEY"
+                ],
+                "domains": [
+                    "testdomain.8x8.com"
+                ]
+            },
+            "powerdns": {
+                "required_credentials": [
+                    "PDNS_API",
+                    "PDNS_KEY"
+                ],
+                "domains": [
+                    "8x8hosts.internal"
+                ]
+            }
+        }
+    ]
+}
