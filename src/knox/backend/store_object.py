@@ -45,7 +45,7 @@ class StoreObject:
     @property
     def path_name(self) -> str:
         """Convienence method to generate path/name for store"""
-        return self._path + self._name
+        return self._path + "/" + self._name
 
     @property
     def body(self) -> str:
@@ -61,6 +61,10 @@ class StoreObject:
     def version(self) -> int:
         """Object version"""
         return self._version
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self._name = value
 
     @path.setter
     def path(self, value: str) -> None:
