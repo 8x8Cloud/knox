@@ -1,0 +1,9 @@
+click==7.1.2
+shortuuid==1.0.1
+dynaconf==2.2.3
+loguru==0.4.1
+hvac==0.10.1
+requests==2.23.0
+cryptography==2.9.2
+Jinja2==2.11.2
+setuptools==46.1.3
