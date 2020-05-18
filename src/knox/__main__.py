@@ -38,10 +38,24 @@ logger.add(sys.stdout, format="{time} {level} {message}", level="INFO")
 @logger.catch()
 def main():
     knox = Knox()
-    # cert = Cert("common_name")
-    logger.debug(f'Knox instance id: {knox.conf.version}')
-    # load a certificate
+
+    # load a certificates
+    cert1 = Cert("www.example.com")
+    cert1.load_x509("sample_cert1.pem")
     # save it to store
+    knox.store.save(cert1)
+
+    # load a certificates
+    cert2 = Cert("web.example.com")
+    cert2.load_x509("sample_cert2.pem")
+    # save it to store
+    knox.store.save(cert2)
+
+    # load a certificates
+    cert3 = Cert("www.cloud.example.com")
+    cert3.load_x509("sample_cert3.pem")
+    # save it to store
+    knox.store.save(cert3)
 
 
 if __name__ == "__main__":

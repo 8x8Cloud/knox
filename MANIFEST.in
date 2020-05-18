@@ -26,3 +26,6 @@ include Dockerfile
 
 # added by check_manifest.py
 include *.md
+
+# added by check_manifest.py
+recursive-include examples *.pem
