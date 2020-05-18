@@ -172,12 +172,17 @@ class VaultStoreEngine(StoreEngine):
         try:
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_body",
                                                          mount_point=mp,
-                                                         secret=obj.body)
+                                                         secret=obj.data['cert_body'],
+                                                         cas=0)
+
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
                                                          mount_point=mp,
-                                                         secret=obj.info)
-        except Exception:
-            logger.error('Failed to write StoreObject to Vault')
+                                                         secret=obj.data['cert_info'],
+                                                         cas=0)
+        except Exception as vex:
+            logger.error(f'Failed to write StoreObject to Vault {vex}')
+
+        logger.info(f'Successfully stored {obj.path_name}')
 
     def read(self, path: str, name: str) -> StoreObject:
         """Using the provided path and name retrieve the data from the store and create a new StoreObject
@@ -195,7 +200,9 @@ class VaultStoreEngine(StoreEngine):
         try:
             metadata = client.secrets.kv.v2.read_secret_metadata(path=path + "/" + name, mount_point=mp)
             obj = StoreObject(name, path, metadata['data']['data']['cert_body'], metadata['data']['data']['cert_info'])
-        except Exception:
-            logger.error(f'Failed to read StoreObject {self.__vault_mount}/{path}/{name}')
+        except Exception as vex:
+            logger.error(f'Failed to read StoreObject {self.__vault_mount}/{path}/{name} {vex}')
+
+        logger.info(f'Successfully read {obj.path_name}')
 
         return obj
