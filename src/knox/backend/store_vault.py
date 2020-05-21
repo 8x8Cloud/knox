@@ -172,13 +172,11 @@ class VaultStoreEngine(StoreEngine):
         try:
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_body",
                                                          mount_point=mp,
-                                                         secret=obj.data['cert_body'],
-                                                         cas=0)
+                                                         secret=obj.data['cert_body'])
 
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
                                                          mount_point=mp,
-                                                         secret=obj.data['cert_info'],
-                                                         cas=0)
+                                                         secret=obj.data['cert_info'])
         except Exception as vex:
             logger.error(f'Failed to write StoreObject to Vault {vex}')
 
