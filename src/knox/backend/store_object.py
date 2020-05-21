@@ -14,6 +14,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
+import hashlib
+import json
 
 
 class StoreObject:
@@ -21,7 +23,8 @@ class StoreObject:
     _name: str  #: Name of the objects store key
     _path: str  #: Path from store mount point to find store key
     _body: str  #: Content that will be persisted
-    _info: str  #: Metadata about the object being stored, rendered using jinja template
+    _info: str  #: Metadata about the object being stored
+    _data: {}   #: Complete map of object
     _version: int  #: Store revision
 
     def __init__(self, name: str, path: str, body: str, info: str) -> None:
@@ -31,6 +34,7 @@ class StoreObject:
         self._path = path  #: [TODO 5/16/20] ljohnson path validator
         self._body = body  #: [TODO 5/16/20] ljohnson body and info validator
         self._info = info
+        self._data = {}
 
     @property
     def name(self) -> str:
@@ -56,6 +60,17 @@ class StoreObject:
     def info(self) -> str:
         """Object metadata"""
         return self._info
+
+    @property
+    def data(self) -> {}:
+        return self._data
+
+    def md5(self) -> str:  # noqa F811
+        return hashlib.md5(json.dumps(self._data, sort_keys=True).encode('utf-8')).hexdigest()
+
+    @staticmethod  # noqa F811
+    def md5(obj: {}) -> str:
+        return hashlib.md5(json.dumps(obj, sort_keys=True).encode('utf-8')).hexdigest()
 
     @property
     def version(self) -> int:

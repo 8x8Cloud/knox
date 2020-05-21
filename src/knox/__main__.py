@@ -27,36 +27,86 @@ Why does this file exist, and why __main__? For more info, read:
 """
 import sys
 
+import click
 from loguru import logger
 
 from .certificate import Cert  # noqa: F401
+from .config import Conf
 from .knox import Knox
 
-logger.add(sys.stdout, format="{time} {level} {message}", level="INFO")
+logger.remove()
+logger.add(sys.stderr, format="{time} {level} {message}", filter=Conf.log_filter, level="INFO")
+
+knox = Knox()
+logger.info(f'Knox loaded {knox.conf.version}')
 
 
+@click.group()
+@click.option('--debug/--no-debug', default=False)
+@click.pass_context
 @logger.catch()
-def main():
-    knox = Knox()
+def cli(ctx, debug) -> dict:
+    """Utilities for managing and storing TLS certificates using backing store (Vault)."""
+    # ensure that ctx.obj exists and is a dict (in case `cli()` is called
+    # by means other than the `if` block below)
+    ctx.ensure_object(dict)
+    ctx.obj['DEBUG'] = debug
+    if debug:
+        knox.conf.log_level = "DEBUG"
+        logger.info(f'Log level set to {knox.conf.log_level}')
 
-    # load a certificates
-    cert1 = Cert("www.example.com")
-    cert1.load_x509("sample_cert1.pem")
-    # save it to store
-    knox.store.save(cert1)
 
-    # load a certificates
-    cert2 = Cert("web.example.com")
-    cert2.load_x509("sample_cert2.pem")
-    # save it to store
-    knox.store.save(cert2)
+@cli.command(no_args_is_help=True)
+@click.option("--type", "-t", type=click.Choice(['PEM', 'DER'], case_sensitive=True), default='PEM', show_default=True)
+@click.option("--save/--read", default=True, help="Save or Read to/from the store")
+@click.option("--pub", type=click.File("r"), help="Public key file")
+@click.option("--chain", type=click.File("r"), help="Intermediate chain")
+@click.option("--key", type=click.File("r"), help="Private key file")
+@click.argument("name")
+@click.pass_context
+@logger.catch()
+def cert(ctx, type, save, pub, chain, key, name) -> dict:
+    """Certificate utilities.
 
-    # load a certificates
-    cert3 = Cert("www.cloud.example.com")
-    cert3.load_x509("sample_cert3.pem")
-    # save it to store
-    knox.store.save(cert3)
+    NAME is the common name for the certificate. i.e. www.example.com
+    """
+
+    ctx.obj['CERT_PUB'] = pub
+    ctx.obj['CERT_CHAIN'] = chain
+    ctx.obj['CERT_KEY'] = key
+    ctx.obj['CERT_TYPE'] = type
+    ctx.obj['CERT_SAVE'] = save
+    ctx.obj['CERT_NAME'] = name
+
+    certificate = Cert(name)
+    certificate.load_x509(pub.name)
+    # cert.load(pub, key, chain, Cert.PEM)
+    knox.store.save(certificate)
+
+    return ctx
+
+
+@cli.command(no_args_is_help=True)
+@click.option("-f", "--find", help="Find certificate by common name")
+@click.argument("name")
+@click.pass_context
+@logger.catch()
+def store(ctx, find, name) -> dict:
+    """Store commands. Given a certificate NAME perform the store operation.
+
+    NAME can be similar to a full file path or the certificates common name.
+    i.e. www.example.com becomes /com/example/www/www.example.com when stored.
+
+    """
+    ctx.obj['STORE_FIND'] = find
+    if find:
+        certificate = knox.store.find(Cert.to_store_path(name), name=name)  # noqa F841
+        # save certificate_public_key.pem
+        # save certificate_private_key.pem
+        # save certificate_chain.pem
+
+    return ctx
 
 
 if __name__ == "__main__":
-    main()
+    cli(prog_name="knox", obj={})
