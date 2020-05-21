@@ -23,18 +23,25 @@ from dynaconf.utils.files import SEARCHTREE
 from loguru import logger
 
 
-class Conf():
+class Conf:
     """Manage application settings"""
     _version: str
+    log_level = "WARNING"
 
     def __init__(self) -> None:
         """Constructor for Settings"""
+        self.log_level = settings.LOG_LEVEL
         self._version = shortuuid.uuid()
         self._settings = settings
         logger.debug(self._settings.dynaconf_banner)
         logger.debug("Learn more at http://github.com/rochacbruno/dynaconf")
         logger.debug(f'dynaconf search tree: {SEARCHTREE}')
         logger.debug(f'dynaconf loaded? {self._settings.configured}')
+
+    @classmethod
+    def log_filter(cls, record) -> bool:
+        levelno = logger.level(cls.log_level).no
+        return record["level"].no >= levelno
 
     @property
     def version(self) -> str:

@@ -35,14 +35,16 @@ class Cert(StoreObject):
     """Object representation of a TLS certificate"""
     _body: str  #: String representation of private, chain and public portions of certificate as a map/json
     _info: str  #: Certificate details
-    _data: {}  #: Combined body and info string
+    _data: {}  #: Combined body and info map
     _file: object
     _x509: x509
-
     _common_name: str
     _jinja: Environment
 
-    def __init__(self, common_name) -> None:
+    PEM = 1
+    DER = 2
+
+    def __init__(self, common_name=None) -> None:
         """Constructor for Cert"""
         self._common_name = common_name
         self._body = ""
@@ -101,14 +103,18 @@ class Cert(StoreObject):
             'key': key_info
         }, indent=8)
 
-    def store_path(self) -> str:
+    @classmethod
+    def to_store_path(cls, common_name: str) -> str:
         """Generate a backend store path based on the certificates common name
         www.example.com becomes /com/example/www
 
             :return: str
         """
-        domainsplit = self._common_name.split('.')
+        domainsplit = common_name.split('.')
         return "/"+"/".join(reversed(domainsplit))
+
+    def store_path(self) -> str:
+        return self.to_store_path(self._common_name)
 
     def __str__(self) -> str:
         return json.dumps(self._data, indent=4)

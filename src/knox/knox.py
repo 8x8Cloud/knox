@@ -15,28 +15,32 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 from . import backend as backend
-from . import certificate as cert  # noqa: F401
 from . import config as config
 
 
-class Knox():
+class Knox:
     """Composite class for Knox package"""
     _conf: config.Conf
     _store: backend.Store
+    _cli: dict
 
     def __init__(self) -> None:
-        """Constructor for Knox"""
+        """Constructor for Knox """
+
         self._conf = config.Conf()
         self._store = backend.Store(self._conf.settings)
 
     @property
     def settings(self) -> config.Conf.settings:
+        """Access to the Dynaconf settings object"""
         return self._conf.settings
 
     @property
     def conf(self) -> config.Conf:
+        """Access to the knox Conf object"""
         return self._conf
 
     @property
     def store(self) -> backend.Store:
+        """Access to the instantiated store engine"""
         return self._store
