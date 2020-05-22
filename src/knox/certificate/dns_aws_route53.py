@@ -45,6 +45,8 @@ class DnsProviderAWS(DnsEngine):
                 chain_file = "{}/live/{}/chain.pem".format(common_name, config_dir)
                 cert_file = "{}/live/{}/cert.pem".format(common_name, config_dir)
                 privkey_file = "{}/live/{}/privkey.pem".format(common_name, config_dir)
+                with open(chain_file, 'r') as file:
+                    chain_file = file.read()
                 return chain_file
 
 
