@@ -27,7 +27,44 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from ..backend import StoreObject
+from .dns_engine import DnsEngine
+from .dns_aws_route53 import DnsProviderAWS
+from loguru import logger
 
+domain_metadata = {
+    "dns": [
+        {
+            "aws": {
+                "required_credentials": [
+                    "AWS_ACCESS_KEY_ID",
+                    "AWS_SECRET_ACCESS_KEY"
+                ],
+                "domains": [
+                    "acceptance.cloud.8x8.com",
+                    "staging.cloud.8x8.com"
+                ]
+            },
+            "cloudflare": {
+                "required_crednetials": [
+                    "CF_API_EMAIL",
+                    "CF_API_KEY"
+                ],
+                "domains": [
+                    "testdomain.8x8.com"
+                ]
+            },
+            "powerdns": {
+                "required_credentials": [
+                    "PDNS_API",
+                    "PDNS_KEY"
+                ],
+                "domains": [
+                    "8x8hosts.internal"
+                ]
+            }
+        }
+    ]
+}
 
 class Cert(StoreObject):
     """Object representation of a TLS certificate"""
@@ -47,6 +84,10 @@ class Cert():
     """Object representation of a TLS certificate and DNS Engines"""
     _common_name: str
     _data: str
+    _dns_engine: DnsEngine
+    _dns_engine_map = {
+        'aws': DnsProviderAWS
+    }
 
     def __init__(self, common_name=None) -> None:
         """Constructor for Cert"""
@@ -58,6 +99,7 @@ class Cert():
         self._tmpl_body = self._jinja.get_template('body_template.js')
         self._tmpl_info = self._jinja.get_template('info_template.js')
         self._tmpl_data = self._jinja.get_template('data_template.js')
+
 
     def load_x509(self, path: str) -> None:
         """Given path to PEM x509 read in certificate"""
@@ -117,6 +159,22 @@ class Cert():
         domainsplit = common_name.split('.')
         return "/"+"/".join(reversed(domainsplit))
 
+    def validate_dns_domain(self, common_name: str) -> object:
+        """Validate if a domain name derived from common name is supported
+        """
+        domain_suffix = '.'.join(common_name.split('.')[1:])
+        for provider in domain_metadata.get('dns')[0].keys():
+            supported_domains = domain_metadata.get('dns')[0].get(provider).get('domains')
+            for domain in supported_domains:
+                if domain == domain_suffix:
+                    dns_engine = self._dns_engine_map.get(provider).__call__(provider)
+                    break
+        try:
+            isinstance(dns_engine, object)
+            return dns_engine
+        except:
+            logger.error("Unsupported DNS Domain {}".format(domain_suffix))
+
     def store_path(self) -> str:
         return self.to_store_path(self._common_name)
 
@@ -142,3 +200,12 @@ class Cert():
     def data(self) -> str:
         """Content to persist, typically JSON"""
         return self._data
+
+    def generate_cert(self) -> str:
+        """Generate certificate by calling DNS providers"""
+        dns_obj = self.validate_dns_domain(self._common_name)
+        cert_file = dns_obj.call_provider()
+        self.load_x509(cert_file)
+
+
+
