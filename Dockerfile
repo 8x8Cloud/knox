@@ -24,10 +24,16 @@ FROM $IMAGE_URL:$IMAGE_TAG as base
 
 FROM base as builder
 
+# Dependencies for python packages
+RUN apk update && apk upgrade
+RUN apk --no-cache add --virtual .buildset build-base gcc libffi-dev openssl-dev
+
 RUN mkdir /install
 WORKDIR /install
 COPY /src/knox/requirements.txt /requirements.txt
 RUN pip install --prefix=/install -r /requirements.txt --no-warn-script-location
+
+RUN apk del .buildset
 
 FROM base
 
@@ -46,4 +52,3 @@ COPY /src /app
 WORKDIR /app
 
 ENTRYPOINT ["/usr/local/bin/python", "-m", "knox"]
-#CMD ["python", "-m knox"]

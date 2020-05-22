@@ -15,6 +15,20 @@ vault
 
 ```
 
+Running Knox container
+
+```shell script
+docker run -it --net=host -v /Users/ljohnson/dev/git.8x8.com/auto/hashicorp/vault/knox/examples/:/examples 8x8cloud/knox:vlocal sh
+
+
+
+docker run --net=host \
+-v /Users/ljohnson/dev/git.8x8.com/auto/hashicorp/vault/knox/examples/:/examples \
+8x8cloud/knox:vlocal cert --save --pub /examples/sample_cert1.pem www.example.com
+
+
+```
+
 Pypi Publishing
 
 ```
