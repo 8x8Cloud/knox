@@ -160,14 +160,64 @@ Verify you can talk to vault using the vault cli::
 
 Update your knox configuration using `.env`::
 
-	ENVVAR_PREFIX_FOR_DYNACONF=KNOX
+    ENVVAR_PREFIX_FOR_DYNACONF=KNOX
+    INCLUDES_FOR_DYNACONF='./config/*'
 
-	KNOX_TEMP=/tmp
-	KNOX_STORE_ENGINE=vault
-	KNOX_VAULT_URL=http://0.0.0.0:8200
-	KNOX_VAULT_TOKEN="knox"
-	KNOX_VAULT_MOUNT="certificates"
-	KNOX_FILE_HOME=./test
+    KNOX_TEMP=/tmp
+    KNOX_LOG_LEVEL=DEBUG
+    KNOX_STORE_ENGINE=vault
+    KNOX_VAULT_URL=http://127.0.0.1:8200
+    KNOX_VAULT_TOKEN="knox"
+    KNOX_VAULT_MOUNT="certificates"
+    KNOX_VAULT_CLIENT_MAX_VERSIONS=10
+    KNOX_VAULT_CLIENT_CAS=False
+    KNOX_FILE_HOME=./test
 
+And Or use a settings file::
 
+    {
+      "default": {
+        "ENVVAR_PREFIX_FOR_DYNACONF": "KNOX",
+        "INCLUDES_FOR_DYNACONF": "./config/*",
+        "KNOX_TEMP": "./tmp",
+        "KNOX_LOG_LEVEL": "DEBUG",
+        "KNOX_STORE_ENGINE": "vault",
+        "KNOX_VAULT_URL": "http://127.0.0.1:8200",
+        "KNOX_VAULT_TOKEN": "knox",
+        "KNOX_VAULT_MOUNT": "certificates",
+        "KNOX_VAULT_CLIENT_MAX_VERSIONS": "10",
+        "KNOX_VAULT_CLIENT_CAS": "True",
+        "KNOX_FILE_HOME": "./test"
+      },
+      "development": {
+        "ENVVAR_PREFIX_FOR_DYNACONF": "KNOX",
+        "INCLUDES_FOR_DYNACONF": "./config/*"
+      },
+      "production": {
+        "ENVVAR_PREFIX_FOR_DYNACONF": "KNOX",
+        "INCLUDES_FOR_DYNACONF": "./config/*"
+      }
+    }
+
+Don't want to install python, I got you::
+
+    docker run --net=host 8x8cloud/knox --help
+    Usage: knox [OPTIONS] COMMAND [ARGS]...
+
+      Utilities for managing and storing TLS certificates using backing store
+      (Vault).
+
+    Options:
+      --debug / --no-debug
+      --help                Show this message and exit.
+
+    Commands:
+      cert   Certificate utilities.
+      store  Store commands.
+
+Mount a local volume to access certs::
+
+    docker run --net=host \
+    -v ~/dev/knox/examples/:/examples \
+    8x8cloud/knox cert --save --pub /examples/sample_cert1.pem www.example.com
 
