@@ -51,10 +51,10 @@ class Cert(StoreObject):
 
     def __init__(self, common_name=None) -> None:
         """Constructor for Cert"""
-        self._common_name = common_name
+        self._common_name = self.valid_name(common_name)
         self._body = ""
         self._info = ""
-        super().__init__(common_name, self.store_path(), self._body, self._info)
+        super().__init__(name=self._common_name, path=self.store_path(), body=self._body, info=self._info)
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_body = self._jinja.get_template('body_template.js')
         self._tmpl_info = self._jinja.get_template('info_template.js')
@@ -70,8 +70,8 @@ class Cert(StoreObject):
         self._data = ast.literal_eval(self._tmpl_data.render(cert=self))
         self._body['cert_body']['public'] = self._file
         self._data['cert_body']['public'] = self._file
-        self._common_name = self._data['cert_info']['subject']['commonName']
-        self.name = self._common_name
+        self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
+        self.name = self.valid_name(self._common_name)
         self.path = self.store_path()
 
     def load(self, pub: str, key: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
@@ -98,20 +98,28 @@ class Cert(StoreObject):
 
         self._data['cert_body'] = self._body['cert_body']
 
+    def valid_name(self, value: str) -> str:
+        """Some engines might have problems with astrix, as they are used for glob searching and or RBAC"""
+        return value.replace('*', 'wildcard')
+
     def subject(self) -> str:
+        """Return the certificate subject details"""
         return json.dumps({attr.oid._name: attr.value for attr in self._x509.subject}, indent=8)
 
     def issuer(self) -> str:
+        """Return the certificate issuer details"""
         return json.dumps({attr.oid._name: attr.value for attr in self._x509.issuer}, indent=8)
 
     def validity(self) -> str:
+        """Return the certificates dates of validity"""
         cert = self._x509
         return json.dumps({
-            'not_valid_before': cert.not_valid_before.timestamp(),
-            'not_valid_after': cert.not_valid_after.timestamp(),
+            'not_valid_before': f'{cert.not_valid_before}',
+            'not_valid_after': f'{cert.not_valid_after}',
         }, indent=8)
 
     def key_details(self) -> str:
+        """Return characteristics of key used to generate the certificate"""
         cert = self._x509
         public_key = self._x509.public_key()
         key_info = {'size': public_key.key_size}
@@ -128,7 +136,7 @@ class Cert(StoreObject):
         return json.dumps({
             'version': cert.version.name,
             'fingerprint_sha256': hexlify(cert.fingerprint(hashes.SHA256())).decode(),
-            'serial_number': cert.serial_number,
+            'serial_number': f'{cert.serial_number}',
             'key': key_info
         }, indent=8)
 
@@ -149,12 +157,21 @@ class Cert(StoreObject):
         return json.dumps(self._data, indent=4)
 
     def private(self) -> str:
-        return ""
+        """Unless its a dict, its not loaded yet"""
+        if isinstance(self._body, dict):
+            return json.dumps(self._body['cert_body']['private']).replace('\n', '')
+        else:
+            return ""
 
     def chain(self) -> str:
-        return ""
+        """Unless its a dict, its not loaded yet"""
+        if isinstance(self._body, dict):
+            return json.dumps(self._body['cert_body']['chain']).replace('\n', '')
+        else:
+            return ""
 
     def public(self) -> str:
+        """Convenience method for Jinja2 templates. Jinja2 does not process the string if it has carriage returns."""
         return self._x509.public_bytes(Encoding.PEM).decode('utf-8').replace('\n', '')
 
     def info(self) -> str:
