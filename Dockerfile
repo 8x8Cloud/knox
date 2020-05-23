@@ -1,4 +1,4 @@
-# pache Software License 2.0
+# Apache Software License 2.0
 #
 # Copyright (c) 2020, Lance Johnson.
 #
