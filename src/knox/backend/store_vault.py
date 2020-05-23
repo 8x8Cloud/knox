@@ -193,14 +193,17 @@ class VaultStoreEngine(StoreEngine):
         """
         client = self.__vault_client
         mp = self.__vault_mount
-        obj: StoreObject
+        cert: StoreObject
 
         try:
-            metadata = client.secrets.kv.v2.read_secret_metadata(path=path + "/" + name, mount_point=mp)
-            obj = StoreObject(name, path, metadata['data']['data']['cert_body'], metadata['data']['data']['cert_info'])
+            certbody = client.secrets.kv.v2.read_secret_version(path=path + "/" + name + "/cert_body", mount_point=mp)
+            certinfo = client.secrets.kv.v2.read_secret_version(path=path + "/" + name + "/cert_info", mount_point=mp)
+            cert = StoreObject(name=name, path=path, body=certbody['data']['data'], info=certinfo['data']['data'])
+            cert._data = {'cert_body': certbody['data']['data'], 'cert_info': certinfo['data']['data']}
+
         except Exception as vex:
-            logger.error(f'Failed to read StoreObject {self.__vault_mount}/{path}/{name} {vex}')
+            logger.error(f'Failed to read StoreObject /{self.__vault_mount}{path}/{name} {vex}')
 
-        logger.info(f'Successfully read {obj.path_name}')
+        logger.info(f'Successfully read {cert.path_name}')
 
-        return obj
+        return cert
