@@ -61,17 +61,31 @@ class Cert(StoreObject):
         self._tmpl_data = self._jinja.get_template('data_template.js')
 
     def load_x509(self, path: str) -> None:
-        """Given path to PEM x509 read in certificate"""
+        """Given path to PEM x509 read in certificate
+
+            :param path: File path to x509 PEM file
+            :type path: str
+        """
         with open(path, mode='r+', encoding='utf-8') as fp:
             self._file = fp.read()
             self._x509 = x509.load_pem_x509_certificate(bytes(self._file, 'utf-8'), default_backend())
+
+        """Generate data structures using custom Jinja2 templates"""
         self._info = ast.literal_eval(self._tmpl_info.render(cert=self))
         self._body = ast.literal_eval(self._tmpl_body.render(cert=self))
         self._data = ast.literal_eval(self._tmpl_data.render(cert=self))
+
+        """Ensure raw file contents in public key, Jinja2 fails to parse if there are CR LF"""
         self._body['cert_body']['public'] = self._file
         self._data['cert_body']['public'] = self._file
+
+        """Match the objects common name to the true common name from the certificate and
+        swap out '*' astrix for the keyword wildcard
+        """
         self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
         self.name = self.valid_name(self._common_name)
+
+        """Ensure path is the inverse of the true cert common name"""
         self.path = self.store_path()
 
     def load(self, pub: str, key: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
@@ -98,8 +112,10 @@ class Cert(StoreObject):
 
         self._data['cert_body'] = self._body['cert_body']
 
-    def valid_name(self, value: str) -> str:
-        """Some engines might have problems with astrix, as they are used for glob searching and or RBAC"""
+    @classmethod
+    def valid_name(cls, value: str) -> str:
+        """Some engines might have problems with astrix, as they are used for glob searching and or RBAC.
+        Replace it with the key word 'wildcard'. This does not affect the actual certificate."""
         return value.replace('*', 'wildcard')
 
     def subject(self) -> str:
