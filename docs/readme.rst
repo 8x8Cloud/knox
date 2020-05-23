@@ -26,6 +26,8 @@
 
     **TL;DR;** A set of certificate management utilities using a default Vault backend.
 
+.. image:: knox-icon.png
+
 
 .. include:: ../README.md
 
