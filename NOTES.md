@@ -46,3 +46,89 @@ twine check dist/*.whl dist/*.gz
 #publish them
 twine upload --verbose dist/*.whl dist/*.gz
 ```
+
+
+# Banners
+
+
+## [Text Image](https://www.text-image.com/convert/pic2ascii.cgi)
+
+```
+
+```       ``      ``       ```
+``` ````  `  ```` ``  ```` ```
+``` ````     ````     ```` ```
+```  ````````````````````  ```
+`````  ````````````````  `````
+`````  ```````  ```````  `````
+`````  `````  ``  `````` `````
+````  `````` ```` ``````  ````
+````  `````` ```` ``````  ````
+````  ```            ```  ````
+```  ```` ```` ````` ````  ```
+`  `````` ```` ````` ``````  `
+`  `````` `````````` ``````  `
+` ```````  ````````` ``````` `
+
+```
+
+## [ASCII Art Generator](https://www.ascii-art-generator.org/)
+
+```
+
+MMMk'..........:KWd............dWK:..........,OMMM
+MMMx. .;cccc'  ,KWo  .:cccc:.  oWK,  'cccc;. .kMMM
+MMMx. 'OMMMWx. 'xO:  :XMMMMNc  :0x'  oWMMM0' .kMMM
+MMWx. .OMMMWd.   .   :XMMMMNc   .    oWMMM0' .kMMM
+MMMx. .OMMMMKolllllllkNMMMMWOollllllo0WMMM0' .kMMM
+MMMO'  'oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXd,  ,0MMM
+MMMW0o'  .c0WMMMMMMMMMMMMMMMMMMMMMMMMMKl.  ,dKWMMM
+MMMMMWXo.  oWMMMMMMMMMMMMMMMMMMMMMMMMWx. .dNMMMMMM
+MMMMMMMk. .kMMMMMMMMWXOxddxOXWMMMMMMMMO' .OMMMMMMM
+MMMMMMWo  ;KMMMMMMMKl.      'lKMMMMMMMX:  dWMMMMMM
+MMMMMMX;  lNMMMMMMX:  ,oxdl'  ;KMMMMMMWo  :XMMMMMM
+MMMMMMO. .xMMMMMMMk. 'OMMMWx. .kMMMMMMMk. '0MMMMMM
+MMMMMWd. '0MMMMMMMk. ,0MMMMk. .xMMMMMMMK; .xWMMMMM
+MMMMMNc  cNMMMMMMMk. ,0MMMMk. .xMMMMMMMNl  cNMMMMM
+MMMMM0, .dWMMMNXXXd. 'kXXXXx. .oXXXNWMMMx. ,KMMMMM
+MMMMMk. 'OMMMWd..'.   ......   .''.;OMMM0' .kMMMMM
+MWWWXl  ;XMMMNc ,kd;'''...'''',oOo..kMMMN:  lNNWWM
+M0:,'.  oWMMMNc cNWWNNk,.'lKNNNWMO..kMMMWd. .',cKM
+Wo  .',c0MMMMNc cNMMMWO,.,oNMMMMMO..kMMMM0:''. .dW
+X:  cXWWMMMMMNc cNMMMMWxo0NMMMMMMO..kMMMMWWNXl  cN
+O. .xWMMMMMMMNc cNMMMMMXXNWMMMMMMO..kMMMMMMMMk. '0
+d. '0MMMMMMMMNc :KNNNNNNNNNNNNNNNk..kMMMMMMMMK, .x
+:  ;OKKKKKKKK0; ..'''''''''''''''. .oKKKKKKKK0:  c
+.   ..........                       .........   '
+,................................................;
+
+```
+
+
+
+```
+
+MMO,........lNk..........kNl........,0MM
+MMO. ;xkko. cXx. ckkkkc..xXc .lkkk; .OMM
+MMO. lWMM0' .,. .xWMMMk. .,. 'OMMWo 'OMM
+MMO. cNMMXxcccccoKMMMMKoclcccdXMMNl 'OMM
+MMK:..;xXWMMMMMMMMMMMMMMMMMMMMWNk:..cXMM
+MMMNk:. ;KMMMMMMMMMMMMMMMMMMMMXc .cONMMM
+MMMMMK; ,KMMMMMMWNK00KNWMMMMMMX; ;XMMMMM
+MMMMMO. cNMMMMWKl'....'lKWMMMMWl '0MMMMM
+MMMMWd..xWMMMMX; 'dkko. ;KMMMMMk..xWMMMM
+MMMMNc '0MMMMMO' oWMMNc .OMMMMMK, cNMMMM
+MMMM0' :XMMMMMO' oWMMNc .OMMMMMNc ,KMMMM
+MMMMx. dWMWNXXx. cKKK0: .dKKXWMWd..kMMMM
+MMMWl .OMMWo',,   ....   ,;';0MMO' lNMMM
+W0xo' ;XMMNc.dKxol,.':ooxK0;.OMMX: 'oxKW
+X;  ..dWMMNc.kMMMX:.,xWMMMX;.OMMWd..  :X
+O. :0XNMMMNc.kMMMWkd0XMMMMX;.OMMMNX0c '0
+o .xWMMMMMNc.kMMMMNNWWMMMMX;.OMMMMMMk..d
+: '0MWWWWWNc.:dddddddddddxo..OWWWWWM0, :
+. .,::::::;.                 '::::::;. '
+'......................................'
+
+
+```
+
