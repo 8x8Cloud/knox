@@ -32,3 +32,6 @@ recursive-include examples *.pem
 
 # added by check_manifest.py
 include *.txt
+
+# added by check_manifest.py
+include *.png
