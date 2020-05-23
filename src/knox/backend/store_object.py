@@ -34,7 +34,6 @@ class StoreObject:
         self._path = path  #: [TODO 5/16/20] ljohnson path validator
         self._body = body  #: [TODO 5/16/20] ljohnson body and info validator
         self._info = info
-        self._data = {}
 
     @property
     def name(self) -> str:
