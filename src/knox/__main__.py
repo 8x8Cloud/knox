@@ -79,9 +79,21 @@ def cert(ctx, type, save, pub, chain, key, name) -> dict:
     ctx.obj['CERT_NAME'] = name
 
     certificate = Cert(name)
-    certificate.load_x509(pub.name)
-    # cert.load(pub, key, chain, Cert.PEM)
-    knox.store.save(certificate)
+    if save:
+        certificate.load(pub=pub.name,
+                         key=key.name,
+                         chain=chain.name,
+                         certtype=Cert.PEM)
+        knox.store.save(certificate)
+    else:
+        certificate = knox.store.get(certificate.store_path(), name=name)
+        logger.debug(f'Found {certificate.name}')
+        with open(certificate.name+"-pub.pem", "w") as pubf:
+            pubf.write(certificate.body['public'])
+        with open(certificate.name+"-key.pem", "w") as keyf:
+            keyf.write(certificate.body['private'])
+        with open(certificate.name+"-chain.pem", "w") as chainf:
+            chainf.write(certificate.body['chain'])
 
     return ctx
 

@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 import ast
+import enum
 import json
 from binascii import hexlify
 
@@ -41,8 +42,12 @@ class Cert(StoreObject):
     _common_name: str
     _jinja: Environment
 
-    PEM = 1
-    DER = 2
+    class CertTypes(enum.Enum):
+        PEM = 1
+        DER = 2
+
+    PEM = CertTypes.PEM
+    DER = CertTypes.DER
 
     def __init__(self, common_name=None) -> None:
         """Constructor for Cert"""
@@ -68,6 +73,30 @@ class Cert(StoreObject):
         self._common_name = self._data['cert_info']['subject']['commonName']
         self.name = self._common_name
         self.path = self.store_path()
+
+    def load(self, pub: str, key: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
+        """Read in components of a certificate, given filename paths for each
+
+            :param pub: File name of public portion of key
+            :type pub: str
+            :param key: File name of private portion of key
+            :type key: str
+            :param chain: File name of intermediate certificates. Optional as they could be in pub
+            :type chain: str
+            :param certtype: Enum of certificate types [PEM=1, DER=2]
+            :type certtype: Enum
+        """
+        if certtype == Cert.PEM:
+            self.load_x509(pub)
+
+        with open(key, mode="r") as key_fp:
+            self._body['cert_body']['private'] = key_fp.read()
+
+        if chain:
+            with open(chain, mode="r") as chain_fp:
+                self._body['cert_body']['chain'] = chain_fp.read()
+
+        self._data['cert_body'] = self._body['cert_body']
 
     def subject(self) -> str:
         return json.dumps({attr.oid._name: attr.value for attr in self._x509.subject}, indent=8)
