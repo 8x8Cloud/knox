@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='knox',
-    version='0.0.13',
+    version='0.0.14',
     license='Apache-2.0',
     description='Certificate management utilities with Vault backend',
     long_description='%s\n%s' % (
