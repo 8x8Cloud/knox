@@ -12,6 +12,15 @@ Primary components used are Python, Hashicorp Vault, Let's Encrypt and certbot.
 
 Let's Encrypt and Hashicorp Vault are complementary in certificate management.
 
+Dataflow Diagram
+==================
+
+![](deployment-3D.png)
+
+.. image:: deployment-3d.png
+
+There may not necessarily be a container between Certbot or the Devops agent but the key is all access to manage the certs goes through a knox command. Once in place the cert can be accessed directly from Vault by deployment mechanisms with or without knox. Essentially its just a key value path to json. Knox just unifies how and what is stored and provides convenience methods for managing the certs.
+
 Installation
 ============
 
@@ -37,7 +46,7 @@ Knox will store the certificate body, in its entirety, along with metadata relat
 
 Tree Structure::
 
-    certififcates:
+    certificates:
     ├── com
     │      └── example
     │       └── cloud
@@ -56,26 +65,36 @@ Additional data will be stored with the body of the certificates. A jinja templa
     {
         "cert_info":
         {
-            "subject":
-            {
-                "common_name": "www.example.com",
-                "alt_names": ["www.example.com", "example.internal"],
-                "business_category": "private org",
-                "business_country": "US",
-                "business_state": "Delaware",
-                "organization": "Example, Inc."
+            "subject": {
+                 "commonName": "www.example.com",
+                 "countryName": "US",
+                 "emailAddress": "cert@example.com",
+                 "localityName": "San Jose",
+                 "organizationName": "Example, Inc.",
+                 "organizationalUnitName": "Engineering",
+                 "stateOrProvinceName": "CA"
             },
-            "issuer":
-            {
-                "country": "US",
-                "organization": "DgigCert, Inc.",
-                "organization_unit": "www.digicert.com",
-                "common_name": "DigiCert SHA2 EXtended Validation Server CA"
+            "issuer": {
+                 "commonName": "www.example.com",
+                 "countryName": "US",
+                 "emailAddress": "cert@example.com",
+                 "localityName": "San Jose",
+                 "organizationName": "Example, Inc.",
+                 "organizationalUnitName": "Engineering",
+                 "stateOrProvinceName": "CA"
             },
-            "validity":
-            {
-                "not_before": "2019-07-17T22:26:38.493580484Z",
-                "not_after": "2021-07-17T22:26:38.493580484Z"
+            "key_details": {
+                 "fingerprint_sha256": "f6874a226e4d2ea54eed11d8d71e27f5fbd965630aa84f71414209b0227c448c",
+                 "key": {
+                   "size": 4096,
+                   "type": "RSA"
+                 },
+                 "serial_number": "11672594923309745709",
+                 "version": "v1"
+            },
+            "validity": {
+                 "not_valid_after": "2021-05-17 18:49:00",
+                 "not_valid_before": "2020-05-17 18:49:00"
             }
         },
 
@@ -158,7 +177,7 @@ Verify you can talk to vault using the vault cli::
 	Cluster ID      043bfc14-09b1-6033-1c3b-8aeace3adc60
 	HA Enabled      false
 
-Update your knox configuration using `.env`::
+Update your knox configuration using `.env` or direct environment variables::
 
     ENVVAR_PREFIX_FOR_DYNACONF=KNOX
     INCLUDES_FOR_DYNACONF='./config/*'
