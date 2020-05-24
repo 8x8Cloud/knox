@@ -23,7 +23,7 @@ project = 'knox'
 year = '2020'
 author = 'Lance Johnson'
 copyright = '{0}, {1}'.format(year, author)
-version = release = '0.0.17'
+version = release = '0.0.18'
 
 pygments_style = 'trac'
 templates_path = ['.']
