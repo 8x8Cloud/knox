@@ -1,5 +1,5 @@
 
-Local Development Setup
+## Local Development Setup
 
 ```shell script
 # development only!
@@ -15,7 +15,7 @@ vault
 
 ```
 
-Running Knox container
+## Running Knox container
 
 ```shell script
 docker run -it --net=host -v /Users/ljohnson/dev/git.8x8.com/auto/hashicorp/vault/knox/examples/:/examples 8x8cloud/knox:vlocal sh
@@ -29,7 +29,78 @@ docker run --net=host \
 
 ```
 
-Travis CI Command Line
+
+## Certbot
+
+ideas:
+
+* instead of python code to call certbot, call knox from certbot --deploy-hook to store renewed certificate
+* k8s deployment with pvc of certbot configured from configmap 
+
+```
+# https://certbot.eff.org/docs/install.html#running-with-docker
+# https://hub.docker.com/r/certbot/dns-route53
+# https://github.com/certbot-docker/certbot-docker
+# https://certbot.eff.org/docs/using.html#certbot-commands
+
+  --deploy-hook DEPLOY_HOOK
+                        Command to be run in a shell once for each
+                        successfully issued certificate. For this command, the
+                        shell variable $RENEWED_LINEAGE will point to the
+                        config live subdirectory (for example,
+                        "/etc/letsencrypt/live/example.com") containing the
+                        new certificates and keys; the shell variable
+                        $RENEWED_DOMAINS will contain a space-delimited list
+                        of renewed certificate domains (for example,
+                        "example.com www.example.com" (default: None)
+
+
+# non-interactive with deploy-hook
+# probably need to have one of these for every DNS Authoritative Server
+#
+mkdir -p /Users/ljohnson/dev/le/etc/letsencrypt
+mkdir -p /Users/ljohnson/dev/le/var/lib/letsencrypt
+mkdir -p /Users/ljohnson/dev/le/var/log/letsencrypt
+
+docker run --net=host   \
+            -v "/Users/ljohnson/dev/le/etc/letsencrypt:/etc/letsencrypt" \
+            -v "/Users/ljohnson/dev/le/var/lib/letsencrypt:/var/lib/letsencrypt" \
+            -v "/Users/ljohnson/dev/le/var/log/letsencrypt:/var/log/letsencrypt" \
+            --rm --name certbot \
+            certbot/dns-route53 certonly \
+            		--dry-run \
+            		--noninteractive \
+            		--dns-route53 \
+            		--agree-tos \
+            		--register-unsafely-without-email \
+            		--deploy-hook "echo 'knox cert store'" \
+            		-d www.example.com \
+            		-d web.anotherexample.com
+        
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Plugins selected: Authenticator dns-route53, Installer None
+Obtaining a new certificate
+Performing the following challenges:
+dns-01 challenge for web.anotherexample.com
+dns-01 challenge for www.example.com
+Cleaning up challenges
+IMPORTANT NOTES:
+ - Your account credentials have been saved in your Certbot
+   configuration directory at /etc/letsencrypt. You should make a
+   secure backup of this folder now. This configuration directory will
+   also contain certificates and private keys obtained by Certbot so
+   making regular backups of this folder is ideal.
+Unable to locate credentials
+To use certbot-dns-route53, configure credentials as described at 
+https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials 
+add the necessary permissions for Route53 access.
+
+```
+
+
+
+
+## Travis CI Command Line
 
 ```
 >brew install ruby
@@ -61,7 +132,7 @@ Your access token is <REDACTED>
 
 ```
 
-Travis CI PyPi Publishing, added to .travis.yml
+## Travis CI PyPi Publishing, added to .travis.yml
 
 ```
 deploy:
@@ -76,7 +147,7 @@ deploy:
 ```
 
 
-Pypi Publishing
+## Pypi Publishing
 
 ```
 # configure your ~/.pypirc with account details
@@ -93,6 +164,17 @@ twine check dist/*.whl dist/*.gz
 #publish them
 twine upload --verbose dist/*.whl dist/*.gz
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Banners

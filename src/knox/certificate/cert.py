@@ -45,9 +45,11 @@ class Cert(StoreObject):
     class CertTypes(enum.Enum):
         PEM = 1
         DER = 2
+        PFX = 3
 
     PEM = CertTypes.PEM
     DER = CertTypes.DER
+    PFX = CertTypes.PFX
 
     def __init__(self, common_name=None) -> None:
         """Constructor for Cert"""
