@@ -29,6 +29,53 @@ docker run --net=host \
 
 ```
 
+Travis CI Command Line
+
+```
+>brew install ruby
+>gem install travis
+
+>travis login \
+  --org \
+  --github-token <REDACTED>
+>Successfully logged in as rljohnsn!
+ 
+
+>travis repos --active
+8x8Cloud/knox (active: yes, admin: yes, push: yes, pull: yes)
+Description: Certificate managment utilities using a Vault backend
+
+8x8Cloud/swagger2raml (active: yes, admin: yes, push: yes, pull: yes)
+Description: A utility to generate RAML documentation from Swagger JSON
+
+>travis token
+Your access token is <REDACTED>
+
+
+>travis encrypt --org \
+	--token <REDACTED> \
+	--repo 8x8Cloud/knox \
+	--debug --debug-http \
+	<STRING TO ENCRYPT>
+	--add deploy.password
+
+```
+
+Travis CI PyPi Publishing, added to .travis.yml
+
+```
+deploy:
+  provider: pypi
+  user: __token__
+  skip_existing: true
+  password:
+    secure: <ENCRYPTED REDACTED>
+  on:
+    tags: true
+    branch: develop
+```
+
+
 Pypi Publishing
 
 ```

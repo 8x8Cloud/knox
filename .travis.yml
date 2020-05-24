@@ -42,3 +42,12 @@ notifications:
   email:
     on_success: never
     on_failure: always
+deploy:
+  provider: pypi
+  user: __token__
+  skip_existing: true
+  password:
+    secure: gCKC3M1YHXSrX5A9RD0mWUGrsa4vTFS1X5M0n4WZL/EBhmWVPTetpxqNgFor0SVZYPcZtdpYlbJKMUcbdPkCqpc8gvlHRxTkJJDTHokHTk8/kenWs7h9UwZ6IiPgbhSBZP70xzHLaFamga8O1wgo44dLOxm79LzvBVxvKVG0QDFCqs8WaIaBnNCcv3TGgWmg9igdORvdiVgGsJ/K+b0Ze1CHahrlTWrWcnGOee3Bbe4EKA49XE958nzaRIryvSa5FDr8X9k2fj6TanznWKD7zURgeuus1nphqpRYuNx3oz4uJd27vjogoXlOoUv4ZjX0221sfzVpNaj/J9xtGXUHaK3DP9p3mc1VQsN2H7c8HOWeWDDUe3hu94KpYgBBg/xVlQRHJ2c0pBNYn/LfZgNkyOb27vU0esVJ1ZhFE1WX+Kj80CG3UET72Ga76HMpOiCN8Y+4vIzZJ7gy4Z/wdSQSLd+BUdF1245D46PXBnzgvjXkc56V4OYd+7XUOCrq9BMtq/71sEJQV+ou56z21hDAEU8khCN4l9g0OvkQ1zJcTKjk20SFw2qpk9FKNgX6LCxNca3zVHs+VEC5HVyc3J9Vh5uF+XwEIZl2rzO+VJEGOAOGJqp8SCpjzmiCSY3IiAYZ3TYXL19qDkgu1Nuf3BQnEmX4XlKQP5pPPCXHa1BUruA=
+  on:
+    tags: true
+    branch: develop
