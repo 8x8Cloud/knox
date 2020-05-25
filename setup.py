@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='knox',
-    version='0.0.18',
+    version='0.0.19',
     license='Apache-2.0',
     description='Certificate management utilities with Vault backend',
     long_description='%s\n%s' % (
@@ -88,7 +88,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-	    'knox = knox:main'
+            'knox = knox.cli:main'
         ]
     },
 )
