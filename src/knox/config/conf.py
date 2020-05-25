@@ -30,7 +30,8 @@ class Conf:
 
     def __init__(self) -> None:
         """Constructor for Settings"""
-        self.log_level = settings.LOG_LEVEL
+        if hasattr(settings, 'LOG_LEVEL'):
+            self.log_level = settings.LOG_LEVEL
         self._version = shortuuid.uuid()
         self._settings = settings
         logger.debug(self._settings.dynaconf_banner)

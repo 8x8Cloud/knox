@@ -88,7 +88,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-	    'knox = knox:main'
+            'knox = knox.cli:main'
         ]
     },
 )
