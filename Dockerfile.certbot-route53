@@ -17,8 +17,8 @@
 # Built with following command:
 #
 # docker build --no-cache=true -t 8x8cloud/knox:vX.X.X
-ARG IMAGE_URL=python
-ARG IMAGE_TAG=3.8-alpine
+ARG IMAGE_URL=certbot/dns-route53
+ARG IMAGE_TAG=latest
 
 FROM $IMAGE_URL:$IMAGE_TAG as base
 
@@ -26,16 +26,11 @@ FROM base as builder
 
 # Dependencies for python packages
 RUN apk update && apk upgrade
-RUN apk --no-cache add --virtual .buildset build-base gcc libffi-dev openssl-dev
+RUN apk --no-cache add build-base gcc libffi-dev openssl-dev
 
-RUN mkdir /install
-WORKDIR /install
 COPY /src/knox/requirements.txt /requirements.txt
-RUN pip install --prefix=/install -r /requirements.txt --no-warn-script-location
-
-RUN apk del .buildset
-
-FROM base
+RUN pip install -r /requirements.txt
+RUN pip install knox
 
 LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.maintainer="lance.johnson@8x8.com" \
@@ -46,9 +41,10 @@ LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.vendor="8x8" \
       org.label-schema.version='0.0.21'
 
-COPY --from=builder /install /usr/local
 COPY /src /app
 
 WORKDIR /app
 
-ENTRYPOINT ["/usr/local/bin/python", "-m", "knox"]
+ENTRYPOINT ["/usr/bin/env"]
+CMD ["bash"]
+
