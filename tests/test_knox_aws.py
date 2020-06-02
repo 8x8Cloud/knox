@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import sys
-from . knox import AwsCert
+from knox import awscert
+from knox import cli
 
 def test_main():
-    aws = knox.AwsCert()
+    aws = awscert.AwsCert()
     print(aws)
-
 
 if __name__ == "__main__":
     sys.exit(test_main())
