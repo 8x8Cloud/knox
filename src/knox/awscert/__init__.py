@@ -1,1 +1,1 @@
-from knox.awscert import AwsCert
+from . awscert import AwsCert
