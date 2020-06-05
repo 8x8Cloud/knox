@@ -26,10 +26,13 @@ from cryptography.hazmat.primitives.asymmetric import dsa
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
+from dynaconf import LazySettings
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
+from loguru import logger
 
 from ..backend import StoreObject
+from .cert_engine import CertDnsEngine
 
 
 class Cert(StoreObject):
@@ -51,8 +54,9 @@ class Cert(StoreObject):
     DER = CertTypes.DER
     PFX = CertTypes.PFX
 
-    def __init__(self, common_name=None) -> None:
+    def __init__(self, settings: LazySettings, common_name=None) -> None:
         """Constructor for Cert"""
+        self._settings = settings
         self._common_name = self.valid_name(common_name)
         self._body = ""
         self._info = ""
@@ -202,3 +206,12 @@ class Cert(StoreObject):
     def data(self) -> str:
         """Content to persist, typically JSON"""
         return self._data
+
+    def generate(self) -> None:
+        """ Generate certificate for a given common name"""
+        try:
+            cde = CertDnsEngine(self._settings)
+            certfile, chainfile, privkey = cde.call_provider(self._common_name)
+            self.load(pub=certfile, key=privkey, chain=chainfile)
+        except Exception:
+            logger.error(f'Failed to generate certificate {self._common_name}')
