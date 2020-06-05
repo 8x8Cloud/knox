@@ -97,6 +97,28 @@ add the necessary permissions for Route53 access.
 
 ```
 
+## Certificate Transparency Project
+
+```
+# Get all certs associated with a domain as json
+https://crt.sh/?Identity=8x8.com&output=json
+
+# Using its ID grab the SHA-256 ID/string
+https://crt.sh/?id=2865351373
+
+# Use the SHA-256 ID/string to get the public pem
+https://censys.io/certificates/cb99c1a7da13016397180d8aa7afac3088626aba10391113536ddb568274e215/pem/raw
+
+# Store it using knox
+
+# Add links to crt and censys.io to Knox Cert metadata
+
+```
+
+
+
+
+
 
 
 
