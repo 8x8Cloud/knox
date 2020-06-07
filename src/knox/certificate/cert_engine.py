@@ -57,7 +57,7 @@ class CertDnsEngine:
         for provider in self._domain_metadata:
             domains = self._domain_metadata[provider]['domains']
             if domain_suffix in domains:
-                logger.info(f'Domain name {domain_suffix} supported by {provider}')
+                logger.info(f' Domain name {domain_suffix} supported by {provider}')
                 return provider
 
         logger.error(f'No provider found supporting {domain_suffix}')
@@ -114,7 +114,7 @@ class CertDnsEngine:
         provider_name = self.get_provider(name)
         if provider_name:
             if self.validate_provider_credentials(provider_name):
-                logger.info(f'Calling provider {provider_name} for {name}')
+                logger.info(f' Calling provider {provider_name} for {name}')
                 provider_cmd = self.provider_cmd(provider_name)
                 certbot_command = f'{provider_cmd} ' \
                                   f'--email {email_id} ' \

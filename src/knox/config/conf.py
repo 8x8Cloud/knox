@@ -17,32 +17,42 @@ limitations under the License.
 
 from dynaconf.loaders.vault_loader import list_envs
 """
-import shortuuid
+import pkg_resources
 from dynaconf import settings
-from dynaconf.utils.files import SEARCHTREE
 from loguru import logger
 
 
 class Conf:
     """Manage application settings"""
     _version: str
-    log_level = "WARNING"
+    log_level = "INFO"
+    _banner = "\n______ __\n" \
+              "___  //_/________________  __\n" \
+              "__  ,<  __  __ \  __ \_  |/_/\n" \
+              "_  /| | _  / / / /_/ /_>  <\n" \
+              "/_/ |_| /_/ /_/\____//_/|_|\n"  # noqa: W605
 
-    def __init__(self) -> None:
+    def __init__(self, loglevel=None) -> None:
         """Constructor for Settings"""
         if hasattr(settings, 'LOG_LEVEL'):
-            self.log_level = settings.LOG_LEVEL
-        self._version = shortuuid.uuid()
+            self.set_loglevel(settings.LOG_LEVEL)
+        if loglevel:
+            self.set_loglevel(loglevel)
+        self._version = pkg_resources.get_distribution("knox").version
         self._settings = settings
-        logger.debug(self._settings.dynaconf_banner)
-        logger.debug("Learn more at http://github.com/rochacbruno/dynaconf")
-        logger.debug(f'dynaconf search tree: {SEARCHTREE}')
+        logger.debug(f'{self._banner} 🏰 Knox version {self._version}\n')
+        logger.trace(self._settings.dynaconf_banner)
+        logger.debug("Settings managed with Dynaconf, learn more at http://github.com/rochacbruno/dynaconf")
         logger.debug(f'dynaconf loaded? {self._settings.configured}')
 
     @classmethod
     def log_filter(cls, record) -> bool:
         levelno = logger.level(cls.log_level).no
         return record["level"].no >= levelno
+
+    @classmethod
+    def set_loglevel(cls, level: str) -> None:
+        cls.log_level = level
 
     @property
     def version(self) -> str:
