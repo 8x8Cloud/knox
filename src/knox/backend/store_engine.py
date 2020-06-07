@@ -36,7 +36,7 @@ class StoreEngine:
         """Ensure the store is configured properly"""
         pass
 
-    def read(self, path: str, name: str) -> StoreObject:
+    def read(self, path: str, name: str, type=None) -> StoreObject:
         """Read from the store"""
         pass
 

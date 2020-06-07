@@ -31,21 +31,17 @@ Why does this file exist, and why not put this in __main__?
 import sys
 
 import click
+import pkg_resources
 from loguru import logger
 
 from .certificate import Cert  # noqa: F401
 from .config import Conf
 from .knox import Knox
 
-logger.remove()
-logger.add(sys.stderr, format="{time} {level} {message}", filter=Conf.log_filter, level="INFO")
-
-knox = Knox()
-logger.info(f'Knox loaded {knox.conf.version}')
-
 
 @click.group()
 @click.option('--debug/--no-debug', default=False)
+@click.version_option(version=pkg_resources.get_distribution('knox').version)
 @click.pass_context
 @logger.catch()
 def cli(ctx, debug):
@@ -54,13 +50,18 @@ def cli(ctx, debug):
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
     ctx.obj['DEBUG'] = debug
+    logger.remove()
     if debug:
-        knox.conf.log_level = "DEBUG"
-        logger.info(f'Log level set to {knox.conf.log_level}')
+        ctx.obj['LOG_LEVEL'] = 'DEBUG'
+        logger.add(sys.stdout, format="{time} {level: >9} {level.icon} {message}", filter=Conf.log_filter, level="DEBUG", colorize=True)
+        logger.info(f' Log level set to {ctx.obj["LOG_LEVEL"]}')
+    else:
+        ctx.obj['LOG_LEVEL'] = 'WARNING'
+        logger.add(sys.stderr, format="{time} {level: >9} {level.icon} {message}", filter=Conf.log_filter, level="WARNING", colorize=True)
 
 
 @cli.group(no_args_is_help=True)
-@click.option("--type", "-t", type=click.Choice(['PEM', 'DER'], case_sensitive=True), default='PEM', show_default=True)
+@click.option("--type", "-t", type=click.Choice(['PEM', 'DER', 'PFX'], case_sensitive=True), default='PEM', show_default=True)
 @click.option("--pub", type=click.File("r"), help="Public key file")
 @click.option("--chain", type=click.File("r"), help="Intermediate chain")
 @click.option("--key", type=click.File("r"), help="Private key file")
@@ -88,12 +89,14 @@ def save(ctx, name):
     pub = ctx.obj['CERT_PUB']
     key = ctx.obj['CERT_KEY']
     chain = ctx.obj['CERT_CHAIN']
+    certtype = ctx.obj['CERT_TYPE']
 
+    knox = Knox(ctx.obj['LOG_LEVEL'])
     certificate = Cert(knox.settings, common_name=name)
     certificate.load(pub=pub.name,
                      key=key.name,
                      chain=chain.name,
-                     certtype=Cert.PEM)
+                     certtype=certtype)
     knox.store.save(certificate)
 
 
@@ -101,13 +104,14 @@ def save(ctx, name):
 @click.argument("name")
 @click.pass_context
 @logger.catch()
-def load(ctx, name):
-    """Retrieve a certificate for a given common name from the store
+def get(ctx, name):
+    """Retrieve an existing certificate for a given common name from the store
     """
     ctx.obj['CERT_NAME'] = name
+    knox = Knox(ctx.obj['LOG_LEVEL'])
     certificate = Cert(knox.settings, common_name=name)
-    certificate = knox.store.get(certificate.store_path(), name=name)
-    logger.debug(f'Found {certificate.name}')
+    certificate.type = ctx.obj['CERT_TYPE']
+    certificate = knox.store.get(certificate.store_path(), name=name, type=certificate.type)
     with open(certificate.name+"-pub.pem", "w") as pubf:
         pubf.write(certificate.body['public'])
     with open(certificate.name+"-key.pem", "w") as keyf:
@@ -125,6 +129,7 @@ def gen(ctx, name):
     """
     ctx.obj['CERT_NAME'] = name
 
+    knox = Knox(ctx.obj['LOG_LEVEL'])
     certificate = Cert(knox.settings, common_name=name)
     certificate.generate()
     knox.store.save(certificate)
@@ -143,6 +148,7 @@ def store(ctx, find, name) -> dict:
 
     """
     ctx.obj['STORE_FIND'] = find
+    knox = Knox(ctx.obj['LOG_LEVEL'])
     if find:
         certificate = knox.store.find(Cert.to_store_path(name), name=name)  # noqa F841
         # save certificate_public_key.pem

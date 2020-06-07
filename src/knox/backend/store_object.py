@@ -24,15 +24,18 @@ class StoreObject:
     _path: str  #: Path from store mount point to find store key
     _body: str  #: Content that will be persisted
     _info: str  #: Metadata about the object being stored
+    _type: str  #: A way to classify StoreObjects
     _data: {}   #: Complete map of object
     _version: int  #: Store revision
 
-    def __init__(self, name: str, path: str, body: str, info: str) -> None:
+    def __init__(self, name: str, path: str, body: str, info: str, type=None) -> None:
         """Constructor for StoreObject"""
 
         self._name = name  #: [TODO 5/16/20] ljohnson name validator
         self._path = path  #: [TODO 5/16/20] ljohnson path validator
         self._body = body  #: [TODO 5/16/20] ljohnson body and info validator
+        if type:
+            self._type = type
         self._info = info
 
     @property
@@ -47,8 +50,12 @@ class StoreObject:
 
     @property
     def path_name(self) -> str:
-        """Convienence method to generate path/name for store"""
-        return self._path + "/" + self._name
+        """Convenience method to generate path/name for store"""
+        if not self._type:
+            pathname = self._path + "/" + self._name
+        else:
+            pathname = self._path + "/" + self._name + "/" + self._type
+        return pathname
 
     @property
     def body(self) -> str:
@@ -72,6 +79,13 @@ class StoreObject:
         return hashlib.md5(json.dumps(obj, sort_keys=True).encode('utf-8')).hexdigest()
 
     @property
+    def type(self) -> str:
+        if hasattr(self, "_type"):
+            return self._type
+        else:
+            return None
+
+    @property
     def version(self) -> int:
         """Object version"""
         return self._version
@@ -91,6 +105,10 @@ class StoreObject:
     @info.setter
     def info(self, value: str) -> None:
         self._info = value
+
+    @type.setter
+    def type(self, value: str) -> None:
+        self._type = value
 
     @version.setter
     def version(self, value: int) -> None:
