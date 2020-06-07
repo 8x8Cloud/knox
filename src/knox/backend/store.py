@@ -41,6 +41,7 @@ class Store:
             self._engine = self._engine_map.get(settings.STORE_ENGINE).__call__(settings)
         except Exception:
             logger.error(f'StoreEngineFailure KNOX_STORE_ENGINE={settings.STORE_ENGINE} is invalid. Valid options are {self._engine_map.keys()}')  # noqa: E501
+            raise
 
         self._engine.settings = settings
         logger.debug(f'Loaded {self._engine.__class__}')
@@ -49,9 +50,9 @@ class Store:
         """Save the given object to persistence"""
         return self._engine.write(obj)
 
-    def get(self, path: str, name: str) -> StoreObject:
+    def get(self, path: str, name: str, type=None) -> StoreObject:
         """Given path read object"""
-        return self._engine.read(path, name)
+        return self._engine.read(path, name, type)
 
     def delete(self, path: str, name: str) -> bool:
         """Remove the object from the store"""

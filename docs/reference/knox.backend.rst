@@ -32,7 +32,7 @@ knox.backend
     :inherited-members:
     :undoc-members:
 
-.. autoclass:: VaultRESTClient
+.. autoclass:: VaultClient
     :show-inheritance:
     :members:
     :private-members:

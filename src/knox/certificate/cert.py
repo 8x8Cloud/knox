@@ -94,6 +94,8 @@ class Cert(StoreObject):
         """Ensure path is the inverse of the true cert common name"""
         self.path = self.store_path()
 
+        self.type = Cert.PEM.name
+
     def load(self, pub: str, key: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
         """Read in components of a certificate, given filename paths for each
 
@@ -106,7 +108,7 @@ class Cert(StoreObject):
             :param certtype: Enum of certificate types [PEM=1, DER=2]
             :type certtype: Enum
         """
-        if certtype == Cert.PEM:
+        if certtype == Cert.PEM.name:
             self.load_x509(pub)
 
         with open(key, mode="r") as key_fp:
@@ -162,8 +164,8 @@ class Cert(StoreObject):
             'key': key_info
         }, indent=8)
 
-    @classmethod
-    def to_store_path(cls, common_name: str) -> str:
+    @staticmethod
+    def to_store_path(common_name: str) -> str:
         """Generate a backend store path based on the certificates common name
         www.example.com becomes /com/example/www
 

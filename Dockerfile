@@ -44,7 +44,7 @@ LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://knox.readthedocs.org" \
       org.label-schema.vcs-url="git@github.com/8x8cloud/knox.git" \
       org.label-schema.vendor="8x8" \
-      org.label-schema.version='0.0.23'
+      org.label-schema.version='0.0.24'
 
 COPY --from=builder /install /usr/local
 COPY /src /app
