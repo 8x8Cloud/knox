@@ -49,12 +49,17 @@ class VaultClient:
     def open(self) -> bool:
 
         """Get temp token for approle"""
+        logger.trace(f'Getting temp creds: \n'
+                     f'curl -s \\\n'
+                     f'-H "Content-type: application/json" \\\n'
+                     f'-d \'{{"role_id": "{self.__approle}", "secret_id": "{self.__secretid}"}}\' \\\n'
+                     f'{self.__url}/v1/auth/approle/login |jq . \n')
         res = self._post('/v1/auth/approle/login', f'{{"role_id": "{self.__approle}", "secret_id": "{self.__secretid}"}}')
         self.__token = res['auth']['client_token']
         self.__headers['X-Vault-Token'] = self.__token
 
         self.__vault_client = hvac.Client(url=self.__url)
-        self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=False)
+        self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=True)
 
         return self.__vault_client.is_authenticated()
 
@@ -89,7 +94,7 @@ class VaultClient:
         except requests.exceptions.RequestException as err:
             logger.error(f'Error: {err}')
 
-    def _post(self, path: str, data: json) -> requests.Response:
+    def _post(self, path: str, data: json) -> json:
         """POST REST API wrapper method
 
             :param path: Vault API to change or create

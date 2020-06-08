@@ -62,12 +62,12 @@ def cli(ctx, debug):
 
 @cli.group(no_args_is_help=True)
 @click.option("--type", "-t", type=click.Choice(['PEM', 'DER', 'PFX'], case_sensitive=True), default='PEM', show_default=True)
-@click.option("--pub", type=click.File("r"), help="Public key file")
-@click.option("--chain", type=click.File("r"), help="Intermediate chain")
-@click.option("--key", type=click.File("r"), help="Private key file")
+@click.option("--pub", help="Public key file")
+@click.option("--chain", help="Intermediate chain")
+@click.option("--key", help="Private key file")
 @click.pass_context
 @logger.catch()
-def cert(ctx, type, pub, chain, key):
+def cert(ctx, type, pub, key, chain=None):
     """Certificate utilities.
 
     NAME is the common name for the certificate. i.e. www.example.com
@@ -93,9 +93,9 @@ def save(ctx, name):
 
     knox = Knox(ctx.obj['LOG_LEVEL'])
     certificate = Cert(knox.settings, common_name=name)
-    certificate.load(pub=pub.name,
-                     key=key.name,
-                     chain=chain.name,
+    certificate.load(pub=pub,
+                     key=key,
+                     chain=chain,
                      certtype=certtype)
     knox.store.save(certificate)
 
