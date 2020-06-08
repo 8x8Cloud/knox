@@ -13,21 +13,7 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-limitations under the License.
-
-Why does this file exist, and why not put this in __main__?
-
-  You might be tempted to import things from __main__ later, but that will cause
-  problems: the code will get executed twice:
-
-  - When you run `python -m knox` python will execute
-    ``__main__.py`` as a script. That means there won't be any
-    ``knox.__main__`` in ``sys.modules``.
-  - When you import __main__ it will get executed again (as a module) because
-    there's no ``knox.__main__`` in ``sys.modules``.
-
-  Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
-"""
+limitations under the License. """
 import sys
 
 import click
@@ -40,28 +26,47 @@ from .knox import Knox
 
 
 @click.group()
-@click.option('--debug/--no-debug', default=False)
+@click.option("--log", "-l",
+              type=click.Choice(['TRACE',
+                                 'DEBUG',
+                                 'INFO',
+                                 'SUCCESS',
+                                 'WARNING',
+                                 'ERROR',
+                                 'CRITICAL']),
+              default='INFO',
+              show_default=True,
+              help="Sets the level of logging displayed")
+@click.option('--debug/--no-debug', default=False, help="Display log output to console")
 @click.version_option(version=pkg_resources.get_distribution('knox').version)
 @click.pass_context
 @logger.catch()
-def cli(ctx, debug):
+def cli(ctx, debug, log):
     """Utilities for managing and storing TLS certificates using backing store (Vault)."""
-    # ensure that ctx.obj exists and is a dict (in case `cli()` is called
-    # by means other than the `if` block below)
     ctx.ensure_object(dict)
     ctx.obj['DEBUG'] = debug
+    ctx.obj['LOG_LEVEL'] = log
     logger.remove()
     if debug:
-        ctx.obj['LOG_LEVEL'] = 'DEBUG'
-        logger.add(sys.stdout, format="{time} {level: >9} {level.icon} {message}", filter=Conf.log_filter, level="DEBUG", colorize=True)
-        logger.info(f' Log level set to {ctx.obj["LOG_LEVEL"]}')
+        logger.add(sys.stdout,
+                   format="{time} {level: >9} {level.icon} {message}",
+                   filter=Conf.log_filter,
+                   level=f"{log}",
+                   colorize=True)
     else:
-        ctx.obj['LOG_LEVEL'] = 'WARNING'
-        logger.add(sys.stderr, format="{time} {level: >9} {level.icon} {message}", filter=Conf.log_filter, level="WARNING", colorize=True)
+        logger.add(sys.stderr,
+                   format="{time} {level: >9} {level.icon} {message}",
+                   filter=Conf.log_filter,
+                   level=f"{log}",
+                   colorize=True)
+    logger.info(f' Log level set to {ctx.obj["LOG_LEVEL"]}')
 
 
 @cli.group(no_args_is_help=True)
-@click.option("--type", "-t", type=click.Choice(['PEM', 'DER', 'PFX'], case_sensitive=True), default='PEM', show_default=True)
+@click.option("--type", "-t",
+              type=click.Choice(['PEM', 'DER', 'PFX']),
+              default='PEM',
+              show_default=True)
 @click.option("--pub", help="Public key file")
 @click.option("--chain", help="Intermediate chain")
 @click.option("--key", help="Private key file")

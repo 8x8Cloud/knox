@@ -32,12 +32,12 @@ class VaultClient:
 
     __headers = {'Content-Type': 'application/json',
                  'X-Vault-Token': ''}
-    __url: str       #: Vault server URL
-    __token: str     #: Auth token
-    __approle: str   #: Application Role ID
-    __secretid: str  #: Application Role Secret ID
-    __mount: str     #: Engine mount path
-    __mounts: json
+    __url: str            #: Vault server URL
+    __token: str          #: Auth token
+    __approle: str        #: Application Role ID
+    __secretid: str       #: Application Role Secret ID
+    __mount: str          #: Engine mount path
+    __mounts: json        #: Map of Vault mounts
 
     def __init__(self, settings: LazySettings) -> None:
         """Constructor for VaultRESTClient"""
@@ -45,22 +45,17 @@ class VaultClient:
         self.__approle = settings.VAULT_APPROLE
         self.__secretid = settings.VAULT_SECRET_ID
         self.__mount = settings.VAULT_MOUNT
-
-    def open(self) -> bool:
-
-        """Get temp token for approle"""
-        logger.trace(f'Getting temp creds: \n'
-                     f'curl -s \\\n'
-                     f'-H "Content-type: application/json" \\\n'
-                     f'-d \'{{"role_id": "{self.__approle}", "secret_id": "{self.__secretid}"}}\' \\\n'
-                     f'{self.__url}/v1/auth/approle/login |jq . \n')
-        res = self._post('/v1/auth/approle/login', f'{{"role_id": "{self.__approle}", "secret_id": "{self.__secretid}"}}')
-        self.__token = res['auth']['client_token']
-        self.__headers['X-Vault-Token'] = self.__token
-
         self.__vault_client = hvac.Client(url=self.__url)
-        self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=True)
 
+    def connect(self) -> bool:
+        try:
+            logger.trace(f'Connecting to Vault approle: {self.__approle} secret_id: {self.__secretid}')
+            resp = self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=False)
+            self.__token = resp['auth']['client_token']
+            self.__headers['X-Vault-Token'] = self.__token
+        except hvac.exceptions.VaultError as err:
+            logger.error(f'Failed to authenticate with Vault {err}')
+            raise
         return self.__vault_client.is_authenticated()
 
     def url(self) -> str:
@@ -80,6 +75,8 @@ class VaultClient:
             :return: JSON paylod
         """
         try:
+            """Connect refreshes the temp Vault auth token"""
+            self.connect()
             response = requests.get(self.__url+path, headers=self.__headers)
             response.raise_for_status()
 
@@ -104,6 +101,8 @@ class VaultClient:
             :return: requests.Response object
         """
         try:
+            """Connect refreshes the temp Vault auth token"""
+            self.connect()
             response = requests.post(self.__url+path, headers=self.__headers, data=data)
             response.raise_for_status()
 
@@ -128,6 +127,8 @@ class VaultClient:
             :return: requests.Response object
         """
         try:
+            """Connect refreshes the temp Vault auth token"""
+            self.connect()
             response = requests.put(self.__url+path, headers=self.__headers, data=data)
             response.raise_for_status()
 
@@ -178,6 +179,7 @@ class VaultClient:
                                                          secret=obj.data['cert_info'])
         except Exception as vex:
             logger.error(f'Failed to write StoreObject to Vault {vex}')
+            raise
 
         logger.info(f'Successfully stored {obj.path_name}')
         return True
@@ -216,7 +218,7 @@ class VaultStoreEngine(StoreEngine):
 
     def open(self) -> bool:
         """Ensure the vault client is connected"""
-        return self.__client.open()
+        return self.__client.connect()
 
     def close(self) -> bool:
         """Ensure we close the vault connection"""
