@@ -56,7 +56,8 @@ class VaultClient:
         except hvac.exceptions.VaultError as err:
             logger.error(f'Failed to authenticate with Vault {err}')
             raise
-        return self.__vault_client.is_authenticated()
+
+        return True
 
     def url(self) -> str:
         return self.__url
