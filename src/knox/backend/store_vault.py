@@ -50,8 +50,9 @@ class VaultClient:
     def connect(self) -> bool:
         try:
             logger.trace(f'Connecting to Vault approle: {self.__approle} secret_id: {self.__secretid}')
-            resp = self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=False)
+            resp = self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=True)
             self.__token = resp['auth']['client_token']
+            logger.trace(f'client_token: {self.__token}')
             self.__headers['X-Vault-Token'] = self.__token
         except hvac.exceptions.VaultError as err:
             logger.error(f'Failed to authenticate with Vault {err}')
@@ -171,10 +172,12 @@ class VaultClient:
         mp = self.mount()
 
         try:
+            self.connect()
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_body",
                                                          mount_point=mp,
                                                          secret=obj.data['cert_body'])
 
+            self.connect()
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
                                                          mount_point=mp,
                                                          secret=obj.data['cert_info'])
@@ -193,7 +196,14 @@ class VaultClient:
         else:
             fullpathbody = f'{path}/{name}/cert_body'
             fullpathinfo = f'{path}/{name}/cert_info'
+
+        logger.trace(f'Attempting to read \n\tbody:{fullpathbody}\n\tinfo:{fullpathinfo}')
+        self.connect()
+        logger.trace(f'client.url: {client.url}')
+        logger.trace(f'mount: {self.mount()}')
+
         certbody = client.secrets.kv.v2.read_secret_version(path=fullpathbody, mount_point=self.mount())
+        self.connect()
         certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount())
         return certbody, certinfo
 
@@ -260,6 +270,7 @@ class VaultStoreEngine(StoreEngine):
 
         except Exception as vex:
             logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')
+            raise
 
         logger.info(f' Successfully read {cert.path_name}')
 
