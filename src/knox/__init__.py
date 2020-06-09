@@ -1,3 +1,3 @@
-__version__ = '0.0.26'
+__version__ = '0.0.27'
 from . import cli  # noqa: F401
 from .knox import Knox  # noqa: F401
