@@ -28,7 +28,8 @@ from loguru import logger
 
 from .store_engine import StoreEngine
 from .store_object import StoreObject
-from .store_vault import VaultStoreEngine
+#from .store_vault import VaultStoreEngine
+from .store_vault import VaultClient
 
 class ACMStoreEngine(StoreEngine):
     """
@@ -46,10 +47,13 @@ class ACMStoreEngine(StoreEngine):
         self.region = region if region is not None else settings.AWS_REGION
         self.CertArn = None
         self.__path = None
-        self.__vault_url = settings.VAULT_URL
-        self.__vault_token = settings.VAULT_TOKEN
+        #self.__vault_url = settings.VAULT_URL
+        #self.__vault_token = settings.VAULT_TOKEN
+        #self.__approle = settings.VAULT_APPROLE
+        #self.__secretid = settings.VAULT_SECRET_ID
         self.__vault_mount = settings.VAULT_MOUNT
-        self.__vault_client = hvac.Client(url=self.__vault_url, token=self.__vault_token)
+        #self.__vault_client = hvac.Client(url=self.__vault_url, token=self.__vault_token)
+        self.__vault_client = hvac.Client(url=self.__vault_url)
         self.__session = boto3.Session(profile_name=self.profile_name,region_name=self.region)
 
     def read(self):
@@ -115,9 +119,11 @@ class ACMStoreEngine(StoreEngine):
         tmpl_delivery = tmpl.get_template('delivery_template.js')
         output = tmpl_delivery.render(time_utc_now=time_utc_now,region=self.region,profile=self.profile_name,certarn=self.CertArn)
 
+        #a = VaultClient.connect()
+        #print(a)
         client = self.__vault_client
         mp = self.__vault_mount
-        full_path = self.__path + "/delivery_info"
+        full_path = f'{self.__path}/delivery_info'
 
         try:
             client.secrets.kv.v2.create_or_update_secret(path=full_path, mount_point=mp, secret=json.loads(output))
