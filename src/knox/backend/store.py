@@ -20,14 +20,15 @@ from .store_engine import StoreEngine
 from .store_file import FileStoreEngine
 from .store_object import StoreObject
 from .store_vault import VaultStoreEngine
-
+from .store_acm import ACMStoreEngine
 
 class Store:
     """Abstract class to generalize access to the different stores"""
     _engine: StoreEngine
     _engine_map = {
         'vault': VaultStoreEngine,
-        'file': FileStoreEngine
+        'file': FileStoreEngine,
+        'aws': ACMStoreEngine
     }
 
     def __init__(self, settings) -> None:

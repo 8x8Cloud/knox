@@ -33,6 +33,7 @@ from loguru import logger
 
 from ..backend import StoreObject
 from .cert_engine import CertDnsEngine
+from .cert_aws import AWSCert
 
 
 class Cert(StoreObject):
