@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 import json
+from datetime import datetime
 
 import hvac
 import requests
@@ -207,6 +208,50 @@ class VaultClient:
         certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount())
         return certbody, certinfo
 
+    def search(self, rootpath: str, rootkey: str, searchresults) -> list:
+        """Search for 'cert_info' for a given vault path
+
+            :param rootpath: Beginning search path
+            :type rootpath: str
+            :param rootkey: Used to get commonname from search path
+            :type str
+            :param searchresults: Stores the search results..default is empty
+            :type list
+
+            :return list
+
+        """
+        try:
+            client = self.__vault_client
+            mp = self.mount()
+            path = rootpath
+            secrets = client.secrets.kv.list_secrets(path=path, mount_point=mp)
+            secrets_keys = secrets.get('data').get('keys')
+            if isinstance(secrets_keys, list):
+                if 'cert_info' not in secrets_keys:
+                    for key in secrets_keys:
+                        subpaths = rootpath + key
+                        self.search(rootpath=subpaths, rootkey=key, searchresults=searchresults)
+                else:
+                    cert_info_path = rootpath + "cert_info"
+                    cert_common_name = rootpath.split('/')[-3]
+                    cert_info_dict = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
+                                                                              mount_point=mp)
+                    current_date = datetime.now()
+                    cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
+                                                         .get('validity').get('not_valid_after'), '%Y-%m-%d %H:%M:%S')
+                    days_to_expire = cert_expiry_date - current_date
+                    results_dict = {'common_name': cert_common_name, 'vault_cert_path': rootpath,
+                                    'cert_issue_date': (cert_info_dict.get('data').get('data').get('validity')
+                                                        .get('not_valid_before')),
+                                    'cert_expiry_date': (cert_info_dict.get('data').get('data').get('validity')
+                                                         .get('not_valid_after')),
+                                    'days_to_expire': days_to_expire.days}
+                    searchresults.append(results_dict)
+        except Exception:
+            logger.error(f'Certificate info not found for {rootpath}')
+        return searchresults
+
 
 class VaultStoreEngine(StoreEngine):
     """Vault implementation of the StoreEngine interface"""
@@ -275,3 +320,15 @@ class VaultStoreEngine(StoreEngine):
         logger.info(f' Successfully read {cert.path_name}')
 
         return cert
+
+    def find(self, pattern) -> list:
+        """Search certificate info for a given search pattern
+
+            :param pattern: Search glob pattern
+                ex: abc.8x8.com, abc.8x8.com/*, 8x8.com/*
+            :type pattern: str
+
+            :return: list
+        """
+        searchpath = '/'.join(reversed(pattern.strip('/*').split('.'))) + "/"
+        return self.__client.search(rootpath=searchpath, rootkey="", searchresults=[])
