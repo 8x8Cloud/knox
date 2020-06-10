@@ -20,27 +20,34 @@ from .store_engine import StoreEngine
 from .store_file import FileStoreEngine
 from .store_object import StoreObject
 from .store_vault import VaultStoreEngine
+from .store_acm import ACMStoreEngine
 
 
 class Store:
     """Abstract class to generalize access to the different stores"""
     _engine: StoreEngine
+    _engine_name: str
     _engine_map = {
         'vault': VaultStoreEngine,
-        'file': FileStoreEngine
+        'file': FileStoreEngine,
+        'aws': ACMStoreEngine
     }
 
-    def __init__(self, settings) -> None:
+    def __init__(self, settings, engine_name: str = None) -> None:
         """Dynamically load StoreEngine type from .env via Dynaconf
-        KNOX_STORE_ENGINE=[vault,file]
+        KNOX_STORE_ENGINE=[vault,file,aws]
 
         :param settings: Dynaconf LazySettings
         :type settings: dynaconf.LazySettings
+        :param engine_name: String indicating which StoreEngine to instantiate
+        :type engine_name: String
         """
         try:
-            self._engine = self._engine_map.get(settings.STORE_ENGINE).__call__(settings)
+            self._engine_name = engine_name if engine_name is not None else settings.STORE_ENGINE
+            self._engine = self._engine_map.get(self._engine_name).__call__(settings)
         except Exception:
-            logger.error(f'StoreEngineFailure KNOX_STORE_ENGINE={settings.STORE_ENGINE} is invalid. Valid options are {self._engine_map.keys()}')  # noqa: E501
+            logger.error(
+                f'StoreEngineFailure KNOX_STORE_ENGINE={self._engine_name} is invalid. Valid options are {self._engine_map.keys()}')  # noqa: E501
             raise
 
         self._engine.settings = settings

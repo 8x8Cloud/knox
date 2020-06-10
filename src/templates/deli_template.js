@@ -1,0 +1,3 @@
+{
+    "deliveries": {{ cert.deliveries() -}}
+}

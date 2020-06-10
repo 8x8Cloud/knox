@@ -33,22 +33,29 @@ from loguru import logger
 
 from ..backend import StoreObject
 from .cert_engine import CertDnsEngine
+from .cert_aws import AWSCert
 
 
 class Cert(StoreObject):
     """Object representation of a TLS certificate"""
     _body: str  #: String representation of private, chain and public portions of certificate as a map/json
     _info: str  #: Certificate details
-    _data: {}  #: Combined body and info map
+    _data: {}   #: Combined body and info map
+    _deliveries: []  #: Record of where the certificate has been deployed
     _file: object
     _x509: x509
     _common_name: str
+    _type: str  #: Certificate type identifier
     _jinja: Environment
 
     class CertTypes(enum.Enum):
         PEM = 1
         DER = 2
         PFX = 3
+
+        @classmethod
+        def valid(cls, name) -> bool:
+            return any(x for x in cls if x.name == name)
 
     PEM = CertTypes.PEM
     DER = CertTypes.DER
@@ -60,11 +67,13 @@ class Cert(StoreObject):
         self._common_name = self.valid_name(common_name)
         self._body = ""
         self._info = ""
+        self._type = ""
         super().__init__(name=self._common_name, path=self.store_path(), body=self._body, info=self._info)
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_body = self._jinja.get_template('body_template.js')
         self._tmpl_info = self._jinja.get_template('info_template.js')
         self._tmpl_data = self._jinja.get_template('data_template.js')
+        self._tmpl_deli = self._jinja.get_template('deli_template.js')
 
     def load_x509(self, path: str) -> None:
         """Given path to PEM x509 read in certificate
@@ -82,8 +91,7 @@ class Cert(StoreObject):
         self._data = ast.literal_eval(self._tmpl_data.render(cert=self))
 
         """Ensure raw file contents in public key, Jinja2 fails to parse if there are CR LF"""
-        self._body['cert_body']['public'] = self._file
-        self._data['cert_body']['public'] = self._file
+        self.public = self._file
 
         """Match the objects common name to the true common name from the certificate and
         swap out '*' astrix for the keyword wildcard
@@ -129,6 +137,15 @@ class Cert(StoreObject):
     def subject(self) -> str:
         """Return the certificate subject details"""
         return json.dumps({attr.oid._name: attr.value for attr in self._x509.subject}, indent=8)
+
+    @property
+    def type(self) -> str:
+        return self._type
+
+    @type.setter
+    def type(self, value: str) -> None:
+        if Cert.CertTypes.valid(value):
+            self._type = value
 
     def issuer(self) -> str:
         """Return the certificate issuer details"""
@@ -187,6 +204,7 @@ class Cert(StoreObject):
         else:
             return ""
 
+    @property
     def chain(self) -> str:
         """Unless its a dict, its not loaded yet"""
         if isinstance(self._body, dict):
@@ -194,9 +212,25 @@ class Cert(StoreObject):
         else:
             return ""
 
+    @chain.setter
+    def chain(self, value) -> None:
+        if isinstance(self._body, dict):
+            self._body['cert_body']['chain'] = value
+            self._data['cert_body']['chain'] = value
+
+    @property
     def public(self) -> str:
         """Convenience method for Jinja2 templates. Jinja2 does not process the string if it has carriage returns."""
-        return self._x509.public_bytes(Encoding.PEM).decode('utf-8').replace('\n', '')
+        if self.type == Cert.PEM.name:
+            return self._x509.public_bytes(Encoding.PEM).decode('utf-8').replace('\n', '')
+        else:
+            raise CertUnsupportedTypeException(type=self.type)
+
+    @public.setter
+    def public(self, value: str) -> None:
+        if isinstance(self._body, dict):
+            self._body['cert_body']['public'] = value
+            self._data['cert_body']['public'] = value
 
     def info(self) -> str:
         return json.dumps(self._info['cert_info'], indent=4)
@@ -217,3 +251,21 @@ class Cert(StoreObject):
             self.load(pub=certfile, key=privkey, chain=chainfile, certtype=Cert.PEM.name)
         except Exception:
             logger.error(f'Failed to generate certificate {self._common_name}')
+
+    @property
+    def deliveries(self) -> str:
+        return json.dumps(self._deliveries, indent=4)
+
+    def add_delivery(self, delivery: str) -> None:
+        return self._deliveries.append(delivery)
+
+
+class CertUnsupportedTypeException(Exception):
+    """Exception raised for an unrecognized certificate type"""
+
+    def __init__(self, type: str = None) -> None:
+        self.type = type
+        super().__init__()
+
+    def __str__(self):
+        return f'Unsupported certificate type: {self.type}'

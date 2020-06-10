@@ -42,7 +42,7 @@ class VaultClient:
     __mounts: json        #: Map of Vault mounts
 
     def __init__(self, settings: LazySettings) -> None:
-        """Constructor for VaultRESTClient"""
+        """Constructor for VaultClient"""
         self.__url = settings.VAULT_URL
         self.__approle = settings.VAULT_APPROLE
         self.__secretid = settings.VAULT_SECRET_ID
@@ -186,6 +186,12 @@ class VaultClient:
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
                                                          mount_point=mp,
                                                          secret=obj.data['cert_info'])
+            if hasattr(obj.data, 'deliveries'):
+                self.connect()
+                client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/deliveries",
+                                                             mount_point=mp,
+                                                             secret=obj.data['deliveries'])
+
         except hvac.exceptions.Forbidden as ve:
             logger.error(f'Permission denied writing {obj.path_name}: {ve}')
             sys.exit(2)
@@ -207,9 +213,11 @@ class VaultClient:
         if type:
             fullpathbody = f'{path}/{name}/{type}/cert_body'
             fullpathinfo = f'{path}/{name}/{type}/cert_info'
+            fullpathdeli = f'{path}/{name}/{type}/deliveries'
         else:
             fullpathbody = f'{path}/{name}/cert_body'
             fullpathinfo = f'{path}/{name}/cert_info'
+            fullpathdeli = f'{path}/{name}/deliveries'
 
         try:
             self.connect()
@@ -219,7 +227,9 @@ class VaultClient:
             certbody = client.secrets.kv.v2.read_secret_version(path=fullpathbody, mount_point=self.mount())
             self.connect()
             certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount())
-            return certbody, certinfo
+            self.connect()
+            certdeli = client.secrets.kv.v2.read_secret_version(path=fullpathdeli, mount_point=self.mount())
+            return certbody, certinfo, certdeli
 
         except hvac.exceptions.Forbidden as ve:
             logger.error(f'Permission denied reading {path}/{name}: {ve}')
@@ -339,13 +349,16 @@ class VaultStoreEngine(StoreEngine):
             :return: StoreObject
         """
         try:
-            certbody, certinfo = self.__client.read(path, name, type)
+            certbody, certinfo, certdeli = self.__client.read(path, name, type)
             cert = StoreObject(name=name,
                                path=path,
                                body=certbody['data']['data'],
                                info=certinfo['data']['data'],
                                type=type)
-            cert._data = {'cert_body': certbody['data']['data'], 'cert_info': certinfo['data']['data']}
+            cert._data = {'cert_body': certbody['data']['data'],
+                          'cert_info': certinfo['data']['data'],
+                          'deliveries': certdeli['data']['data']
+                        }
 
         except Exception as vex:
             logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')

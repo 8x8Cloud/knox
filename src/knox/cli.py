@@ -25,7 +25,7 @@ from loguru import logger
 from .certificate import Cert  # noqa: F401
 from .config import Conf
 from .knox import Knox
-
+from .backend import ACMStoreEngine
 
 @click.group()
 @click.option("--log", "-l",
@@ -139,6 +139,32 @@ def gen(ctx, name):
     knox = Knox(ctx.obj['LOG_LEVEL'])
     certificate = Cert(knox.settings, common_name=name)
     certificate.generate()
+    knox.store.save(certificate)
+
+
+@cert.command(no_args_is_help=True)
+@click.argument("name")
+@click.option("--region", default='us-east-1', show_default=True, help="Default AWS region")
+@click.option("--profile", default='', hide_input=True, help="Default AWS profile to use")
+@click.pass_context
+@logger.catch()
+def aws(ctx, name, region, profile):
+    """Store a certificate for a given common name in AWS
+    """
+
+    ctx.obj['CERT_NAME'] = name
+    pub = ctx.obj['CERT_PUB']
+    key = ctx.obj['CERT_KEY']
+    chain = ctx.obj['CERT_CHAIN']
+    certtype = ctx.obj['CERT_TYPE']
+
+    knox = Knox(ctx.obj['LOG_LEVEL'])
+    certificate = Cert(knox.settings, common_name=name)
+    certificate.load(pub=pub, key=key, chain=chain, certtype=certtype)
+    knox.attach("aws")
+    # Save to the attached AWS ACM store
+    knox.stores("aws").save(certificate)
+    # Save to the default store
     knox.store.save(certificate)
 
 

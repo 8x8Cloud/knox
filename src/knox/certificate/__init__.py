@@ -16,3 +16,4 @@ See the License for the specific language governing permissions and
 limitations under the License."""
 from .cert import Cert  # noqa: F401
 from .cert_engine import CertDnsEngine  # noqa: F401
+from .cert_aws import AWSCert  # noqa: F401
