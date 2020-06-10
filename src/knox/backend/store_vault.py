@@ -15,33 +15,59 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 import json
-import sys
 
 import hvac
 import requests
+from dynaconf import LazySettings
 from loguru import logger
 
 from .store_engine import StoreEngine
 from .store_object import StoreObject
 
 
-class VaultRESTClient:
-    """REST Client commands not available via hvac"""
-    """[TODO 5/17/20] ljohnson add hvac.Client to this object"""
+class VaultClient:
+    """Client commands not available via hvac"""
+
+    __vault_client: hvac.Client
 
     __headers = {'Content-Type': 'application/json',
                  'X-Vault-Token': ''}
-    __url: str  #: Vault server URL
-    __token: str  #: Auth token
-    __mount: str  #: Engine mount path
-    __mounts: json
+    __url: str            #: Vault server URL
+    __token: str          #: Auth token
+    __approle: str        #: Application Role ID
+    __secretid: str       #: Application Role Secret ID
+    __mount: str          #: Engine mount path
+    __mounts: json        #: Map of Vault mounts
 
-    def __init__(self, url: str, token: str, mount: str) -> None:
+    def __init__(self, settings: LazySettings) -> None:
         """Constructor for VaultRESTClient"""
-        self.__url = url
-        self.__token = token
-        self.__mount = mount
-        self.__headers['X-Vault-Token'] = token
+        self.__url = settings.VAULT_URL
+        self.__approle = settings.VAULT_APPROLE
+        self.__secretid = settings.VAULT_SECRET_ID
+        self.__mount = settings.VAULT_MOUNT
+        self.__vault_client = hvac.Client(url=self.__url)
+
+    def connect(self) -> bool:
+        try:
+            logger.trace(f'Connecting to Vault approle: {self.__approle} secret_id: {self.__secretid}')
+            resp = self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=True)
+            self.__token = resp['auth']['client_token']
+            logger.trace(f'client_token: {self.__token}')
+            self.__headers['X-Vault-Token'] = self.__token
+        except hvac.exceptions.VaultError as err:
+            logger.error(f'Failed to authenticate with Vault {err}')
+            raise
+
+        return True
+
+    def url(self) -> str:
+        return self.__url
+
+    def mount(self) -> str:
+        return self.__mount
+
+    def logout(self) -> bool:
+        return self.__vault_client.logout()
 
     def _get(self, path: str) -> json:
         """GET REST API wrapper method
@@ -51,7 +77,35 @@ class VaultRESTClient:
             :return: JSON paylod
         """
         try:
+            """Connect refreshes the temp Vault auth token"""
+            self.connect()
             response = requests.get(self.__url+path, headers=self.__headers)
+            response.raise_for_status()
+
+            return json.loads(response.content.decode('utf-8'))
+
+        except requests.exceptions.HTTPError as errh:
+            logger.error(f'Http Error: {errh}')
+        except requests.exceptions.ConnectionError as errc:
+            logger.error(f'Error Connecting: {errc}')
+        except requests.exceptions.Timeout as errt:
+            logger.error(f'Timeout Error: {errt}')
+        except requests.exceptions.RequestException as err:
+            logger.error(f'Error: {err}')
+
+    def _post(self, path: str, data: json) -> json:
+        """POST REST API wrapper method
+
+            :param path: Vault API to change or create
+            :type path: String
+            :param data: Required request body
+            :type data: JSON
+            :return: requests.Response object
+        """
+        try:
+            """Connect refreshes the temp Vault auth token"""
+            self.connect()
+            response = requests.post(self.__url+path, headers=self.__headers, data=data)
             response.raise_for_status()
 
             return json.loads(response.content.decode('utf-8'))
@@ -75,6 +129,8 @@ class VaultRESTClient:
             :return: requests.Response object
         """
         try:
+            """Connect refreshes the temp Vault auth token"""
+            self.connect()
             response = requests.put(self.__url+path, headers=self.__headers, data=data)
             response.raise_for_status()
 
@@ -111,49 +167,73 @@ class VaultRESTClient:
             self.__mounts = self._get("/v1/sys/mounts")
         return mount+"/" in self.__mounts['data'].keys()
 
+    def upsert(self, obj: StoreObject) -> bool:
+        client = self.__vault_client
+        mp = self.mount()
+
+        try:
+            self.connect()
+            client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_body",
+                                                         mount_point=mp,
+                                                         secret=obj.data['cert_body'])
+
+            self.connect()
+            client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
+                                                         mount_point=mp,
+                                                         secret=obj.data['cert_info'])
+        except Exception as vex:
+            logger.error(f'Failed to write StoreObject to Vault {vex}')
+            raise
+
+        logger.info(f'Successfully stored {obj.path_name}')
+        return True
+
+    def read(self, path: str, name: str, type=None) -> tuple:
+        client = self.__vault_client
+        if type:
+            fullpathbody = f'{path}/{name}/{type}/cert_body'
+            fullpathinfo = f'{path}/{name}/{type}/cert_info'
+        else:
+            fullpathbody = f'{path}/{name}/cert_body'
+            fullpathinfo = f'{path}/{name}/cert_info'
+
+        logger.trace(f'Attempting to read \n\tbody:{fullpathbody}\n\tinfo:{fullpathinfo}')
+        self.connect()
+        logger.trace(f'client.url: {client.url}')
+        logger.trace(f'mount: {self.mount()}')
+
+        certbody = client.secrets.kv.v2.read_secret_version(path=fullpathbody, mount_point=self.mount())
+        self.connect()
+        certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount())
+        return certbody, certinfo
+
 
 class VaultStoreEngine(StoreEngine):
     """Vault implementation of the StoreEngine interface"""
-    __vault_url: str
-    __vault_token: str
-    __vault_client: hvac.Client
-    __vault_RESTClient: VaultRESTClient
+    __client: VaultClient
 
     def __init__(self, settings) -> None:
         """Constructor for VaultStoreEngine"""
         super().__init__()
         self._settings = settings
-        self.__vault_url = settings.VAULT_URL
-        self.__vault_token = settings.VAULT_TOKEN
-        self.__vault_mount = settings.VAULT_MOUNT
-        self.__vault_client = hvac.Client(url=self.__vault_url, token=self.__vault_token)
-        self.__vault_RESTClient = VaultRESTClient(self.__vault_url, self.__vault_token, self.__vault_mount)
-        logger.debug(f'🔐 Vault backend configuration loaded. {self.__vault_url}')
+        self.__client = VaultClient(settings)
+        logger.debug(f'🔐 Vault backend configuration loaded. {self.__client.url()}')
         if self.initialize():
             logger.debug("🔐 Vault backend initialized.")
+        else:
+            logger.error(f'🛑 Failed to connect to Vault {self.__client.url()}')
+            raise
 
     def initialize(self) -> bool:
-        try:
-            self.__vault_RESTClient.new_mount(self.__vault_mount)
-            self.__vault_client.secrets.kv.configure(
-                max_versions=self._settings.VAULT_CLIENT_MAX_VERSIONS,
-                cas_required=self._settings.VAULT_CLIENT_CAS,
-                mount_point=self.__vault_mount
-            )
-
-        except Exception as err:
-            logger.error(f'Failed to configure vault client {err}')
-            sys.exit(1)
-
         return self.open()
 
     def open(self) -> bool:
         """Ensure the vault client is connected"""
-        return self.__vault_client.is_authenticated()
+        return self.__client.connect()
 
     def close(self) -> bool:
         """Ensure we close the vault connection"""
-        return self.__vault_client.logout()
+        return self.__client.logout()
 
     def __del__(self):
         """When the object is destroyed make sure we close the connection to Vault"""
@@ -166,44 +246,32 @@ class VaultStoreEngine(StoreEngine):
             :type obj: StoreObject
             :return: bool
         """
-        client = self.__vault_client
-        mp = self.__vault_mount
+        return self.__client.upsert(obj)
 
-        try:
-            client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_body",
-                                                         mount_point=mp,
-                                                         secret=obj.data['cert_body'])
-
-            client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
-                                                         mount_point=mp,
-                                                         secret=obj.data['cert_info'])
-        except Exception as vex:
-            logger.error(f'Failed to write StoreObject to Vault {vex}')
-
-        logger.info(f'Successfully stored {obj.path_name}')
-
-    def read(self, path: str, name: str) -> StoreObject:
+    def read(self, path: str, name: str, type=None) -> StoreObject:
         """Using the provided path and name retrieve the data from the store and create a new StoreObject
 
             :param path: Store path to the object
             :type path: str
             :param name: Name of the object to retrieve
             :type name: str
+            :param type: StoreObject type, if known
+            :type type: str
             :return: StoreObject
         """
-        client = self.__vault_client
-        mp = self.__vault_mount
-        cert: StoreObject
-
         try:
-            certbody = client.secrets.kv.v2.read_secret_version(path=path + "/" + name + "/cert_body", mount_point=mp)
-            certinfo = client.secrets.kv.v2.read_secret_version(path=path + "/" + name + "/cert_info", mount_point=mp)
-            cert = StoreObject(name=name, path=path, body=certbody['data']['data'], info=certinfo['data']['data'])
+            certbody, certinfo = self.__client.read(path, name, type)
+            cert = StoreObject(name=name,
+                               path=path,
+                               body=certbody['data']['data'],
+                               info=certinfo['data']['data'],
+                               type=type)
             cert._data = {'cert_body': certbody['data']['data'], 'cert_info': certinfo['data']['data']}
 
         except Exception as vex:
-            logger.error(f'Failed to read StoreObject /{self.__vault_mount}{path}/{name} {vex}')
+            logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')
+            raise
 
-        logger.info(f'Successfully read {cert.path_name}')
+        logger.info(f' Successfully read {cert.path_name}')
 
         return cert

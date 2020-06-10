@@ -26,10 +26,13 @@ from cryptography.hazmat.primitives.asymmetric import dsa
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
+from dynaconf import LazySettings
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
+from loguru import logger
 
 from ..backend import StoreObject
+from .cert_engine import CertDnsEngine
 
 
 class Cert(StoreObject):
@@ -51,8 +54,9 @@ class Cert(StoreObject):
     DER = CertTypes.DER
     PFX = CertTypes.PFX
 
-    def __init__(self, common_name=None) -> None:
+    def __init__(self, settings: LazySettings, common_name=None) -> None:
         """Constructor for Cert"""
+        self._settings = settings
         self._common_name = self.valid_name(common_name)
         self._body = ""
         self._info = ""
@@ -90,6 +94,8 @@ class Cert(StoreObject):
         """Ensure path is the inverse of the true cert common name"""
         self.path = self.store_path()
 
+        self.type = Cert.PEM.name
+
     def load(self, pub: str, key: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
         """Read in components of a certificate, given filename paths for each
 
@@ -102,7 +108,7 @@ class Cert(StoreObject):
             :param certtype: Enum of certificate types [PEM=1, DER=2]
             :type certtype: Enum
         """
-        if certtype == Cert.PEM:
+        if certtype == Cert.PEM.name:
             self.load_x509(pub)
 
         with open(key, mode="r") as key_fp:
@@ -158,8 +164,8 @@ class Cert(StoreObject):
             'key': key_info
         }, indent=8)
 
-    @classmethod
-    def to_store_path(cls, common_name: str) -> str:
+    @staticmethod
+    def to_store_path(common_name: str) -> str:
         """Generate a backend store path based on the certificates common name
         www.example.com becomes /com/example/www
 
@@ -202,3 +208,12 @@ class Cert(StoreObject):
     def data(self) -> str:
         """Content to persist, typically JSON"""
         return self._data
+
+    def generate(self) -> None:
+        """ Generate certificate for a given common name"""
+        try:
+            cde = CertDnsEngine(self._settings)
+            certfile, chainfile, privkey = cde.call_provider(self._common_name)
+            self.load(pub=certfile, key=privkey, chain=chainfile)
+        except Exception:
+            logger.error(f'Failed to generate certificate {self._common_name}')
