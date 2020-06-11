@@ -208,7 +208,7 @@ class VaultClient:
         certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount())
         return certbody, certinfo
 
-    def search(self, rootpath: str, rootkey: str, searchresults) -> list:
+    def search(self, rootpath: str, rootkey: str, searchresults: list) -> list:
         """Search for 'cert_info' for a given vault path
 
             :param rootpath: Beginning search path
@@ -222,10 +222,8 @@ class VaultClient:
 
         """
         try:
-            client = self.__vault_client
-            mp = self.mount()
             path = rootpath
-            secrets = client.secrets.kv.list_secrets(path=path, mount_point=mp)
+            secrets = self.__vault_client.secrets.kv.list_secrets(path=path, mount_point=self.mount())
             secrets_keys = secrets.get('data').get('keys')
             if isinstance(secrets_keys, list):
                 if 'cert_info' not in secrets_keys:
@@ -235,8 +233,8 @@ class VaultClient:
                 else:
                     cert_info_path = rootpath + "cert_info"
                     cert_common_name = rootpath.split('/')[-3]
-                    cert_info_dict = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
-                                                                              mount_point=mp)
+                    cert_info_dict = self.__vault_client.secrets.kv.v2.read_secret_version(path=cert_info_path,
+                                                                              mount_point=self.mount())
                     current_date = datetime.now()
                     cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
                                                          .get('validity').get('not_valid_after'), '%Y-%m-%d %H:%M:%S')

@@ -85,14 +85,16 @@ class CertDnsEngine:
             logger.error(f'Provider credentials for {provider} are not set/valid')
             return False
 
-    def provider_cmd(self, plugin) -> str:
+    def provider_cmd(self, plugin: str, name: str) -> str:
         """Generate DNS provider specific certbot commands
 
             :param plugin: certbot args for specific dns provider
             :type plugin: str
+            :param name: certificate common name
+            :type name: str
             :returns str
         """
-        command = f'certbot certonly -n --agree-tos --{plugin} -d {self._common_name}'
+        command = f'certbot certonly -n --agree-tos --{plugin} -d {name}'
         return command
 
     def call_provider(self, name: str) -> tuple:
@@ -115,7 +117,7 @@ class CertDnsEngine:
         if provider_name:
             if self.validate_provider_credentials(provider_name):
                 logger.info(f' Calling provider {provider_name} for {name}')
-                provider_cmd = self.provider_cmd(provider_name)
+                provider_cmd = self.provider_cmd(provider_name, name)
                 certbot_command = f'{provider_cmd} ' \
                                   f'--email {email_id} ' \
                                   f'--work-dir {work_dir} ' \

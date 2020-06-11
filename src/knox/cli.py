@@ -152,10 +152,12 @@ def store(ctx, find, name) -> dict:
     i.e. www.example.com becomes /com/example/www/www.example.com when stored.
 
     """
+    """[TODO: Shankar - fine tune the find options"""
     ctx.obj['STORE_FIND'] = find
     knox = Knox(ctx.obj['LOG_LEVEL'])
     if find:
-        certificate = knox.store.find(Cert.to_store_path(name), name=name)  # noqa F841
+        results = knox.store.find(pattern=name)  # noqa F841
+        print(results)
         # save certificate_public_key.pem
         # save certificate_private_key.pem
         # save certificate_chain.pem

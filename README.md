@@ -240,3 +240,18 @@ Mount a local volume to access certs::
     -v ~/dev/knox/examples/:/examples \
     8x8cloud/knox cert --save --pub /examples/sample_cert1.pem www.example.com
 
+Search for an info about certificate on a given pattern
+
+
+```
+   python -m knox store * -f list --> list all the certificates info
+
+   (or)
+
+   python -m knox store com/* -f list  --> list only about the *.com certificates
+
+   (or)
+
+   python -m knox store testing.8x8cloud.com -f list  --> list info about testinging.8x8cloud.com
+
+```
