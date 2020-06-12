@@ -142,8 +142,8 @@ def gen(ctx, name):
 
 @cert.command(no_args_is_help=True)
 @click.argument("name")
-@click.option("--region", default='us-east-1', show_default=True, help="Default AWS region")
-@click.option("--profile", default='', hide_input=True, help="Default AWS profile to use")
+@click.option("--region", default=None, help="Default AWS region")
+@click.option("--profile", default=None, help="Default AWS profile to use")
 @click.pass_context
 @logger.catch()
 def aws(ctx, name, region, profile):
@@ -158,7 +158,7 @@ def aws(ctx, name, region, profile):
 
     knox = Knox(ctx.obj['LOG_LEVEL'])
     certificate = Cert(knox.settings, common_name=name)
-    certificate.load(pub=pub, key=key, chain=chain, certtype=Cert.PEM)
+    certificate.load(pub=pub, key=key, chain=chain, certtype=certtype)
     ACMStoreEngine(profile_name=profile,region=region).write(certificate)
     ## As a backup I would like to store the cert in vault
     knox.store.save(certificate)
