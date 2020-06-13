@@ -182,9 +182,14 @@ class VaultClient:
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
                                                          mount_point=mp,
                                                          secret=obj.data['cert_info'])
+        except hvac.exceptions.Forbidden as ve:
+            logger.error(f'Permission denied writing {obj.path_name}: {ve}')
+        except hvac.exceptions.InvalidPath as ve:
+            logger.error(f'Path invalid for {obj.path_name}: {ve}')
+        except hvac.exceptions.Unauthorized as ve:
+            logger.error(f'Credentials not authorized to write {obj.path_name}: {ve}')
         except Exception as vex:
             logger.error(f'Failed to write StoreObject to Vault {vex}')
-            raise
 
         logger.info(f'Successfully stored {obj.path_name}')
         return True
@@ -198,15 +203,22 @@ class VaultClient:
             fullpathbody = f'{path}/{name}/cert_body'
             fullpathinfo = f'{path}/{name}/cert_info'
 
-        logger.trace(f'Attempting to read \n\tbody:{fullpathbody}\n\tinfo:{fullpathinfo}')
-        self.connect()
-        logger.trace(f'client.url: {client.url}')
-        logger.trace(f'mount: {self.mount()}')
+        try:
+            self.connect()
+            logger.trace(f'Attempting to read \n\tbody:{fullpathbody}\n\tinfo:{fullpathinfo}')
+            logger.trace(f'client.url: {client.url}')
+            logger.trace(f'mount: {self.mount()}')
+            certbody = client.secrets.kv.v2.read_secret_version(path=fullpathbody, mount_point=self.mount())
+            self.connect()
+            certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount())
+            return certbody, certinfo
 
-        certbody = client.secrets.kv.v2.read_secret_version(path=fullpathbody, mount_point=self.mount())
-        self.connect()
-        certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount())
-        return certbody, certinfo
+        except hvac.exceptions.Forbidden as ve:
+            logger.error(f'Permission denied reading {path}/{name}: {ve}')
+        except hvac.exceptions.InvalidPath as ve:
+            logger.error(f'Path invalid for {path}/{name}: {ve}')
+        except hvac.exceptions.Unauthorized as ve:
+            logger.error(f'Credentials not authorized to read {path}/{name}: {ve}')
 
     def search(self, rootpath: str, rootkey: str, searchresults: list) -> list:
         """Search for 'cert_info' for a given vault path
@@ -222,8 +234,12 @@ class VaultClient:
 
         """
         try:
+            client = self.__vault_client
+            self.connect()
+            rootpath = rootpath.replace('//', '/')
             path = rootpath
-            secrets = self.__vault_client.secrets.kv.list_secrets(path=path, mount_point=self.mount())
+            logger.trace(f'Searching {path}')
+            secrets = client.secrets.kv.list_secrets(path=path, mount_point=self.mount())
             secrets_keys = secrets.get('data').get('keys')
             if isinstance(secrets_keys, list):
                 if 'cert_info' not in secrets_keys:
@@ -233,7 +249,8 @@ class VaultClient:
                 else:
                     cert_info_path = rootpath + "cert_info"
                     cert_common_name = rootpath.split('/')[-3]
-                    cert_info_dict = self.__vault_client.secrets.kv.v2.read_secret_version(path=cert_info_path,
+                    self.connect()
+                    cert_info_dict = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
                                                                               mount_point=self.mount())
                     current_date = datetime.now()
                     cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
@@ -246,8 +263,12 @@ class VaultClient:
                                                          .get('not_valid_after')),
                                     'days_to_expire': days_to_expire.days}
                     searchresults.append(results_dict)
-        except Exception:
-            logger.error(f'Certificate info not found for {rootpath}')
+        except hvac.exceptions.Forbidden as ve:
+            logger.error(f'Permission denied for reading from {rootpath}: {ve}')
+        except hvac.exceptions.InvalidPath as ve:
+            logger.error(f'Path not found for {rootpath}: {ve}')
+        except hvac.exceptions.Unauthorized as ve:
+            logger.error(f'Credentials not authorized to access {rootpath}: {ve}')
         return searchresults
 
 
@@ -313,11 +334,9 @@ class VaultStoreEngine(StoreEngine):
 
         except Exception as vex:
             logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')
-            raise
-
-        logger.info(f' Successfully read {cert.path_name}')
-
-        return cert
+        else:
+            logger.info(f' Successfully read {cert.path_name}')
+            return cert
 
     def find(self, pattern) -> list:
         """Search certificate info for a given search pattern
