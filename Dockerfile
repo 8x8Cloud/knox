@@ -16,7 +16,7 @@
 #
 # Built with following command:
 #
-# docker build --no-cache=true -t 8x8cloud/knox:v0.0.28 .
+# docker build --no-cache=true -t 8x8cloud/knox:v0.1.0 .
 ARG IMAGE_URL=python
 ARG IMAGE_TAG=3.8-alpine
 
@@ -30,7 +30,7 @@ RUN apk --no-cache add --virtual .buildset build-base gcc libffi-dev openssl-dev
 
 COPY /src/knox/requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
-RUN pip install knox==0.0.28
+RUN pip install knox==0.1.0
 
 LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.maintainer="lance.johnson@8x8.com" \
@@ -39,7 +39,7 @@ LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://knox.readthedocs.org" \
       org.label-schema.vcs-url="git@github.com/8x8cloud/knox.git" \
       org.label-schema.vendor="8x8" \
-      org.label-schema.version='0.0.28'
+      org.label-schema.version='0.1.0'
 
 COPY /src /app
 
