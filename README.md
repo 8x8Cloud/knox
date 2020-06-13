@@ -227,8 +227,13 @@ Don't want to install python, I got you::
       (Vault).
 
     Options:
-      --debug / --no-debug
-      --help                Show this message and exit.
+      -l, --log [TRACE|DEBUG|INFO|SUCCESS|WARNING|ERROR|CRITICAL]
+                                      Sets the level of logging displayed
+                                      [default: INFO]
+
+      -v, --verbose                   Display log output to console
+      --version                       Show the version and exit.
+      --help                          Show this message and exit.
 
     Commands:
       cert   Certificate utilities.
@@ -238,20 +243,14 @@ Mount a local volume to access certs::
 
     docker run --net=host \
     -v ~/dev/knox/examples/:/examples \
-    8x8cloud/knox cert --save --pub /examples/sample_cert1.pem www.example.com
+    8x8cloud/knox cert \
+    --pub /examples/sample_cert1.pem \
+    --key /examples/sample_key1.pem \
+    save www.example.com
 
-Search for an info about certificate on a given pattern
+Search for stored certificates::
 
+    knox store find *               # list all the certificates info
+    knox store find *.example.com   # list all the *.example.com certificates
+    knox store find com/example/www # list about www.example.com
 
-```
-   python -m knox store * -f list --> list all the certificates info
-
-   (or)
-
-   python -m knox store com/* -f list  --> list only about the *.com certificates
-
-   (or)
-
-   python -m knox store testing.8x8cloud.com -f list  --> list info about testinging.8x8cloud.com
-
-```

@@ -152,7 +152,7 @@ def store(ctx) -> dict:
 @store.command(no_args_is_help=True)
 @click.option("--file", "-f", help="Output file, default stdout")
 @click.option("--output", "-o",
-              type=click.Choice(['JSON', 'CSV'],case_sensitive=False),
+              type=click.Choice(['JSON', 'CSV'], case_sensitive=False),
               default='JSON',
               show_default=True,
               help="Type of output")
@@ -174,7 +174,7 @@ def find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
     if name:
         results = knox.store.find(pattern=name)  # noqa F841
         handle = open(file, 'w') if file else sys.stdout
-        if output is 'JSON':
+        if output == 'JSON':
             handle.write(json.dumps(results, indent=4))
         else:
             csv_writer = csv.writer(handle)

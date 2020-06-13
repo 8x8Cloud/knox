@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 import json
+import sys
 from datetime import datetime
 
 import hvac
@@ -55,11 +56,14 @@ class VaultClient:
             self.__token = resp['auth']['client_token']
             logger.trace(f'client_token: {self.__token}')
             self.__headers['X-Vault-Token'] = self.__token
+        except requests.exceptions.ConnectionError as err:
+            logger.error(f'Failed to connect to {self.__url}: {err}')
+            sys.exit(2)
         except hvac.exceptions.VaultError as err:
             logger.error(f'Failed to authenticate with Vault {err}')
-            raise
-
-        return True
+            sys.exit(2)
+        else:
+            return True
 
     def url(self) -> str:
         return self.__url
@@ -184,15 +188,19 @@ class VaultClient:
                                                          secret=obj.data['cert_info'])
         except hvac.exceptions.Forbidden as ve:
             logger.error(f'Permission denied writing {obj.path_name}: {ve}')
+            sys.exit(2)
         except hvac.exceptions.InvalidPath as ve:
             logger.error(f'Path invalid for {obj.path_name}: {ve}')
+            sys.exit(2)
         except hvac.exceptions.Unauthorized as ve:
             logger.error(f'Credentials not authorized to write {obj.path_name}: {ve}')
+            sys.exit(2)
         except Exception as vex:
             logger.error(f'Failed to write StoreObject to Vault {vex}')
-
-        logger.info(f'Successfully stored {obj.path_name}')
-        return True
+            sys.exit(2)
+        else:
+            logger.info(f'Successfully stored {obj.path_name}')
+            return True
 
     def read(self, path: str, name: str, type=None) -> tuple:
         client = self.__vault_client
@@ -215,10 +223,13 @@ class VaultClient:
 
         except hvac.exceptions.Forbidden as ve:
             logger.error(f'Permission denied reading {path}/{name}: {ve}')
+            sys.exit(2)
         except hvac.exceptions.InvalidPath as ve:
             logger.error(f'Path invalid for {path}/{name}: {ve}')
+            sys.exit(2)
         except hvac.exceptions.Unauthorized as ve:
             logger.error(f'Credentials not authorized to read {path}/{name}: {ve}')
+            sys.exit(2)
 
     def search(self, rootpath: str, rootkey: str, searchresults: list) -> list:
         """Search for 'cert_info' for a given vault path
@@ -226,12 +237,10 @@ class VaultClient:
             :param rootpath: Beginning search path
             :type rootpath: str
             :param rootkey: Used to get commonname from search path
-            :type str
+            :type str:
             :param searchresults: Stores the search results..default is empty
-            :type list
-
-            :return list
-
+            :type list:
+            :return: list
         """
         try:
             client = self.__vault_client
@@ -263,13 +272,20 @@ class VaultClient:
                                                          .get('not_valid_after')),
                                     'days_to_expire': days_to_expire.days}
                     searchresults.append(results_dict)
+        except requests.exceptions.ConnectionError as ve:
+            logger.error(f'Failed to connect to {self.__url}: {ve}')
+            sys.exit(2)
         except hvac.exceptions.Forbidden as ve:
             logger.error(f'Permission denied for reading from {rootpath}: {ve}')
+            sys.exit(2)
         except hvac.exceptions.InvalidPath as ve:
             logger.error(f'Path not found for {rootpath}: {ve}')
+            sys.exit(2)
         except hvac.exceptions.Unauthorized as ve:
             logger.error(f'Credentials not authorized to access {rootpath}: {ve}')
-        return searchresults
+            sys.exit(2)
+        else:
+            return searchresults
 
 
 class VaultStoreEngine(StoreEngine):
@@ -286,7 +302,6 @@ class VaultStoreEngine(StoreEngine):
             logger.debug("🔐 Vault backend initialized.")
         else:
             logger.error(f'🛑 Failed to connect to Vault {self.__client.url()}')
-            raise
 
     def initialize(self) -> bool:
         return self.open()
@@ -334,6 +349,7 @@ class VaultStoreEngine(StoreEngine):
 
         except Exception as vex:
             logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')
+            sys.exit(2)
         else:
             logger.info(f' Successfully read {cert.path_name}')
             return cert
