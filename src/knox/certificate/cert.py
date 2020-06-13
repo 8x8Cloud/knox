@@ -214,6 +214,6 @@ class Cert(StoreObject):
         try:
             cde = CertDnsEngine(self._settings)
             certfile, chainfile, privkey = cde.call_provider(self._common_name)
-            self.load(pub=certfile, key=privkey, chain=chainfile)
+            self.load(pub=certfile, key=privkey, chain=chainfile, certtype=Cert.PEM.name)
         except Exception:
             logger.error(f'Failed to generate certificate {self._common_name}')

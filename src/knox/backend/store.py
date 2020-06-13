@@ -59,7 +59,8 @@ class Store:
         """[TODO 5/13/20] ljohnson implement soft delete and hard deletes"""
         return self._engine.delete(path, name)
 
-    def find(self, path: str, name: str) -> [StoreObject]:
-        """Given a path, return collection of all objects"""
-        """[TODO 5/13/20] ljohnson implement glob searching /path/**/path2/*"""
-        pass
+    def find(self, pattern: str) -> list:
+        """Given a pattern, return collection of all objects
+           Search patterns : abc.8x8.com, abc.8x8.com/*, 8x8.com/*
+        """
+        return self._engine.find(pattern)
