@@ -14,6 +14,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. """
+import csv
+import json
 import sys
 
 import click
@@ -37,34 +39,34 @@ from .backend import ACMStoreEngine
               default='INFO',
               show_default=True,
               help="Sets the level of logging displayed")
-@click.option('--debug/--no-debug', default=False, help="Display log output to console")
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Display log output to console")
 @click.version_option(version=pkg_resources.get_distribution('knox').version)
 @click.pass_context
 @logger.catch()
-def cli(ctx, debug, log):
+def cli(ctx, verbose: bool = False, log: str = 'INFO'):
     """Utilities for managing and storing TLS certificates using backing store (Vault)."""
     ctx.ensure_object(dict)
-    ctx.obj['DEBUG'] = debug
+    ctx.obj['VERBOSE'] = verbose
     ctx.obj['LOG_LEVEL'] = log
     logger.remove()
-    if debug:
+    if verbose:
         logger.add(sys.stdout,
                    format="{time} {level: >9} {level.icon} {message}",
                    filter=Conf.log_filter,
                    level=f"{log}",
                    colorize=True)
+        logger.info(f' Log level set to {ctx.obj["LOG_LEVEL"]}')
     else:
         logger.add(sys.stderr,
                    format="{time} {level: >9} {level.icon} {message}",
                    filter=Conf.log_filter,
                    level=f"{log}",
                    colorize=True)
-    logger.info(f' Log level set to {ctx.obj["LOG_LEVEL"]}')
 
 
 @cli.group(no_args_is_help=True)
 @click.option("--type", "-t",
-              type=click.Choice(['PEM', 'DER', 'PFX']),
+              type=click.Choice(['PEM', 'DER', 'PFX'], case_sensitive=False),
               default='PEM',
               show_default=True)
 @click.option("--pub", help="Public key file")
@@ -72,7 +74,7 @@ def cli(ctx, debug, log):
 @click.option("--key", help="Private key file")
 @click.pass_context
 @logger.catch()
-def cert(ctx, type, pub, key, chain=None):
+def cert(ctx, pub: str, key: str, type: str = 'PEM', chain: str = None):
     """Certificate utilities.
 
     NAME is the common name for the certificate. i.e. www.example.com
@@ -80,7 +82,7 @@ def cert(ctx, type, pub, key, chain=None):
     ctx.obj['CERT_PUB'] = pub
     ctx.obj['CERT_CHAIN'] = chain
     ctx.obj['CERT_KEY'] = key
-    ctx.obj['CERT_TYPE'] = type
+    ctx.obj['CERT_TYPE'] = type.upper()
 
 
 @cert.command(no_args_is_help=True)
@@ -164,25 +166,51 @@ def aws(ctx, name, region, profile):
     knox.store.save(certificate)
 
 
-@cli.command(no_args_is_help=True)
-@click.option("-f", "--find", help="Find certificate by common name")
+@cli.group(no_args_is_help=True)
+@click.pass_context
+def store(ctx) -> dict:
+    """Store commands. Given a certificate NAME perform the store operation."""
+    pass
+
+
+@store.command(no_args_is_help=True)
+@click.option("--file", "-f", help="Output file, default stdout")
+@click.option("--output", "-o",
+              type=click.Choice(['JSON', 'CSV'], case_sensitive=False),
+              default='JSON',
+              show_default=True,
+              help="Type of output")
 @click.argument("name")
 @click.pass_context
 @logger.catch()
-def store(ctx, find, name) -> dict:
-    """Store commands. Given a certificate NAME perform the store operation.
+def find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
+    """Given a certificate NAME pattern search the store.
 
     NAME can be similar to a full file path or the certificates common name.
     i.e. www.example.com becomes /com/example/www/www.example.com when stored.
+    Supports wild cards. *.example.com
 
     """
-    ctx.obj['STORE_FIND'] = find
+    ctx.obj['STORE_FIND_NAME'] = name
+    ctx.obj['STORE_FIND_OUTPUT'] = output
+    ctx.obj['STORE_FIND_OUTFILE'] = file
     knox = Knox(ctx.obj['LOG_LEVEL'])
-    if find:
-        certificate = knox.store.find(Cert.to_store_path(name), name=name)  # noqa F841
-        # save certificate_public_key.pem
-        # save certificate_private_key.pem
-        # save certificate_chain.pem
+    if name:
+        results = knox.store.find(pattern=name)  # noqa F841
+        handle = open(file, 'w') if file else sys.stdout
+        if output == 'JSON':
+            handle.write(json.dumps(results, indent=4))
+        else:
+            csv_writer = csv.writer(handle)
+            count = 0
+            for rec in results:
+                if count == 0:
+                    header = rec.keys()
+                    csv_writer.writerow(header)
+                    count += 1
+                csv_writer.writerow(rec.values())
+
+        handle.close()
 
     return ctx
 
