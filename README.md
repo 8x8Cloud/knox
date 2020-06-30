@@ -36,7 +36,7 @@ Or run it as a container::
 
     docker run 8x8cloud/knox
 
-See [Dynaconf](https://dynaconf.readthedocs.io/en/latest/) for how the configuration is read in. At its simplest just add environment variables into a `.env` file.
+See [Dynaconf](https://dynaconf.readthedocs.io/) for how the configuration is read in. At its simplest just add environment variables into a `.env` file.
 
 
 Metadata

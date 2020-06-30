@@ -33,7 +33,6 @@ from loguru import logger
 
 from ..backend import StoreObject
 from .cert_engine import CertDnsEngine
-from .cert_aws import AWSCert
 
 
 class Cert(StoreObject):
@@ -41,7 +40,7 @@ class Cert(StoreObject):
     _body: str  #: String representation of private, chain and public portions of certificate as a map/json
     _info: str  #: Certificate details
     _data: {}   #: Combined body and info map
-    _deliveries: []  #: Record of where the certificate has been deployed
+    _deliveries: list  #: Record of where the certificate has been deployed
     _file: object
     _x509: x509
     _common_name: str
@@ -68,6 +67,7 @@ class Cert(StoreObject):
         self._body = ""
         self._info = ""
         self._type = ""
+        self._deliveries = []
         super().__init__(name=self._common_name, path=self.store_path(), body=self._body, info=self._info)
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_body = self._jinja.get_template('body_template.js')
@@ -81,6 +81,8 @@ class Cert(StoreObject):
             :param path: File path to x509 PEM file
             :type path: str
         """
+        self.type = Cert.PEM.name
+
         with open(path, mode='r+', encoding='utf-8') as fp:
             self._file = fp.read()
             self._x509 = x509.load_pem_x509_certificate(bytes(self._file, 'utf-8'), default_backend())
@@ -101,8 +103,6 @@ class Cert(StoreObject):
 
         """Ensure path is the inverse of the true cert common name"""
         self.path = self.store_path()
-
-        self.type = Cert.PEM.name
 
     def load(self, pub: str, key: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
         """Read in components of a certificate, given filename paths for each
@@ -197,6 +197,7 @@ class Cert(StoreObject):
     def __str__(self) -> str:
         return json.dumps(self._data, indent=4)
 
+    @property
     def private(self) -> str:
         """Unless its a dict, its not loaded yet"""
         if isinstance(self._body, dict):

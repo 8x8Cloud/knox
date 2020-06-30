@@ -15,22 +15,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import ast
 import sys
-import json
-import hvac
+
 import boto3
-from botocore.exceptions import ClientError, EndpointConnectionError
-from dynaconf import settings
-from datetime import datetime, time
-from jinja2 import Template, Environment, FileSystemLoader
+from botocore.exceptions import ClientError
+from botocore.exceptions import EndpointConnectionError
+from dynaconf import LazySettings
+from jinja2 import Environment
+from jinja2 import FileSystemLoader
 from loguru import logger
 
 from .store_engine import StoreEngine
 from .store_object import StoreObject
-from ..certificate import Cert
-from ..certificate import AWSCert
-from .store_vault import VaultStoreEngine
 
 
 class ACMStoreEngine(StoreEngine):
@@ -42,25 +39,25 @@ class ACMStoreEngine(StoreEngine):
     __AwsErrors = (ClientError, EndpointConnectionError)
     __session: boto3.session.Session
 
-    def __init__(self, profile_name=None, region=None):
+    def __init__(self, settings: LazySettings = None):
         super().__init__()
-        self.profile_name = profile_name if profile_name is not None else settings.AWS_PROFILE
-        self.region = region if region is not None else settings.AWS_REGION
+        self.profile_name = settings.AWS_PROFILE
+        self.region = settings.AWS_REGION
         self.CertArn = None
         self.__path = None
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_tags = self._jinja.get_template('tags_template.js')
         if self.initialize():
-            logger.debug(f'Connected to ACM')
+            logger.debug('Connected to ACM')
         else:
-            logger.error(f'No AWS profiles found')
+            logger.error('No AWS profiles found')
             sys.exit(1)
 
-    def initialize(self) -> None:
+    def initialize(self) -> bool:
         self.__session = boto3.Session(profile_name=self.profile_name, region_name=self.region)
-        return self.__session.available_profiles().len() > 0
+        return len(self.__session.available_profiles) > 0
 
-    def find(self, pattern: str) -> [AWSCert]:
+    def find(self, pattern: str) -> [StoreObject]:
         certs = []
         try:
             acm_res = self.__session.client('acm').list_certificates(
@@ -80,12 +77,12 @@ class ACMStoreEngine(StoreEngine):
         else:
             return certs
 
-    def get(self, name: str, arn: str) -> AWSCert:
+    def get(self, name: str, arn: str) -> StoreObject:
         try:
             acm_res = self.__session.client('acm').get_certificate(
                 CertificateArn=arn
             )
-            cert = AWSCert(common_name=name)
+            cert = StoreObject(name=name)
             cert.public = acm_res.get('Certificate')
             if hasattr(acm_res, 'CertificateChain'):
                 cert.chain = acm_res.get('CertificateChain')
@@ -101,7 +98,7 @@ class ACMStoreEngine(StoreEngine):
             if cert.name == name:
                 return cert
 
-    def write(self, cert: AWSCert) -> bool:
+    def write(self, cert: StoreObject) -> bool:
         """ ACM Store Engine Write the certificate to specified region and account
 
             :param cert: The StoreObject to persist in AWS ACM Store
@@ -109,18 +106,26 @@ class ACMStoreEngine(StoreEngine):
             :return: bool
 
         """
-        logger.trace(f'[ACMStoreEngine]:\nPUB:\n{cert.public}\nKEY:\nREDACTED\nCHAIN:\n{cert.chain}\n')
+        logger.trace(f'[ACMStoreEngine]:\nPUB  :{cert.public}\nKEY  :REDACTED\nCHAIN:{cert.chain}\n')
 
         try:
-            acm_res = self.__session.client('acm').import_certificate(
-                Certificate=cert.public,
-                PrivateKey=cert.private,
-                CertificateChain=cert.chain,
-                Tags=self._tmpl_tags.render(cert=cert)
-            )
+            if len(cert.data['cert_body']['chain']) > 0:
+                acm_res = self.__session.client('acm').import_certificate(
+                    Certificate=cert.data['cert_body']['public'],
+                    PrivateKey=cert.data['cert_body']['private'],
+                    CertificateChain=cert.data['cert_body']['chain'],
+                    Tags=ast.literal_eval(self._tmpl_tags.render(cert=cert))
+                )
+            else:
+                acm_res = self.__session.client('acm').import_certificate(
+                    Certificate=cert.data['cert_body']['public'],
+                    PrivateKey=cert.data['cert_body']['private'],
+                    Tags=ast.literal_eval(self._tmpl_tags.render(cert=cert))
+                )
+
             cert.arn = acm_res.get('CertificateArn')
             cert.add_delivery(acm_res)
-            logger.info(
+            logger.trace(
                 f'[ACMStoreEngine]: Certificate uploaded:\n'
                 f'Region: {self.region}\n'
                 f'Account: {self.profile_name}\n'
@@ -128,25 +133,5 @@ class ACMStoreEngine(StoreEngine):
             return True
 
         except self.__AwsErrors as e:
-            logger.error(f'[ACMStoreEngine]: Exception listing certificates from ACM {e}')
+            logger.error(f'[ACMStoreEngine]: Exception importing certificates to ACM {e}')
             sys.exit(1)
-
-    # Private method
-#    def __delivery_info(self):
-#        """ ACM Store delivery information """
-#        time_utc_now = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-#        tmpl = Environment(loader=FileSystemLoader('templates'))
-#        tmpl_delivery = tmpl.get_template('delivery_template.js')
-#        output = tmpl_delivery.render(time_utc_now=time_utc_now, region=self.region, profile=self.profile_name,
-#                                      certarn=self.CertArn)
-#
-#        client = self.__vault_client
-#        mp = self.__vault_mount
-#        full_path = self.__path + "/delivery_info"
-#
-#        try:
-#            client.secrets.kv.v2.create_or_update_secret(path=full_path, mount_point=mp, secret=json.loads(output))
-#
-#        except Exception as e:
-#            logger.error(f'[ACMStoreEngine]: Failed to write delivery_info to Vault {e}')
-

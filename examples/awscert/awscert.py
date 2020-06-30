@@ -16,11 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from datetime import datetime
+
 import boto3
 from botocore.exceptions import ClientError
 from dynaconf import settings
-from datetime import datetime, time
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Environment
+from jinja2 import FileSystemLoader
 
 
 class AwsCert:
@@ -58,7 +60,7 @@ class AwsCert:
             acm_res = _session.client('acm').get_certificate(
                 CertificateArn=self.cert_arn,
             )
-            pub_cert = acm_res.get('Certificate')
+            self.pub_cert = acm_res.get('Certificate')
             self.delivery_info()
         # print(pub_cert)
         except ClientError as e:

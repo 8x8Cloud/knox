@@ -22,7 +22,7 @@ class Knox:
     """Composite class for Knox package"""
     _conf: config.Conf
     _store: backend.Store
-    _stores: [backend.Store]
+    _stores: dict
     _cli: dict
 
     def __init__(self, loglevel=None) -> None:
@@ -30,6 +30,7 @@ class Knox:
 
         self._conf = config.Conf(loglevel)
         self._store = backend.Store(self._conf.settings)
+        self._stores = {}
 
     @property
     def settings(self) -> config.Conf.settings:
@@ -53,5 +54,3 @@ class Knox:
     def attach(self, engine_name: str) -> bool:
         """Instantiate an additional store"""
         self._stores[engine_name] = backend.Store(self._conf.settings, engine_name)
-
-

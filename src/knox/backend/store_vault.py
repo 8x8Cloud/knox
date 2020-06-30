@@ -357,8 +357,7 @@ class VaultStoreEngine(StoreEngine):
                                type=type)
             cert._data = {'cert_body': certbody['data']['data'],
                           'cert_info': certinfo['data']['data'],
-                          'deliveries': certdeli['data']['data']
-                        }
+                          'deliveries': certdeli['data']['data']}
 
         except Exception as vex:
             logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')

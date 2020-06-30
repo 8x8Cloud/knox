@@ -16,9 +16,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from re import match
-from re import Pattern
+import re
+
 from dynaconf import settings
+
 from .cert import Cert
 
 
@@ -32,8 +33,8 @@ class AWSCert(Cert):
         self._arn = arn
 
     @classmethod
-    def ARNPATTERN(cls) -> Pattern:  # noqa: PEP8
-        return Pattern('arn:aws:acm:\w+:\d+:certificate\/.*')  # noqa: PEP8
+    def ARNPATTERN(cls) -> re.Pattern:  # noqa: PEP8
+        return re.compile("arn:aws:acm:\w+:\d+:certificate\/.*")  # noqa: PEP8 W605
 
     @property
     def arn(self) -> str:
@@ -41,7 +42,5 @@ class AWSCert(Cert):
 
     @arn.setter
     def arn(self, value) -> None:
-        if match(pattern=AWSCert.ARNPATTERN, string=value):
+        if AWSCert.ARNPATTERN().match(value):
             self._arn = value
-
-
