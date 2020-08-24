@@ -1,0 +1,23 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: certrenewal
+  namespace: default
+spec:
+  schedule: '*/1 * * * *'
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: fetchingcertsfromknox
+              image: <IMAGE>
+              imagePullPolicy: Always
+              envFrom:
+              - configMapRef:
+                  name: vault-server-details
+              - secretRef:
+                  name: vaultsecrets
+          restartPolicy: OnFailure
+          imagePullSecrets:
+          - name: regcred
