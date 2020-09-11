@@ -11,13 +11,11 @@ spec:
         spec:
           containers:
             - name: fetchingcertsfromknox
-              image: <IMAGE>
-              imagePullPolicy: Always
+              image: {{ .Values.certrenewal.image.url }}:{{ .Values.certrenewal.image.tag }}
+              imagePullPolicy: {{ .Values.certrenewal.image.imagepullpolicy }}
               envFrom:
               - configMapRef:
                   name: vault-server-details
               - secretRef:
                   name: vaultsecrets
           restartPolicy: OnFailure
-          imagePullSecrets:
-          - name: regcred

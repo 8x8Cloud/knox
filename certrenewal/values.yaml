@@ -1,0 +1,11 @@
+certrenewal:
+  domainsearch: "<domain search>"
+  image:
+   url: "8x8cloud/certbot-dns-route53"
+   tag: "latest"
+   imagepullpolicy: "IfNotPresent"
+  knox:
+   vaulturl: "<vault url>"
+   vaultmount: "<vault mount>"
+   vaultstoreengine: "<vault engine>"
+  email: "<email>"

@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: vault-server-details
-  namespace: default
-data:
-  KNOX_VAULT_URL: "<Vault-Server-Url>"
-  KNOX_VAULT_MOUNT: "<Vault-Mount>"
-  KNOX_STORE_ENGINE: "<Vault-Store-Engine>" 

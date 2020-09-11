@@ -1,0 +1,10 @@
+apiVersion: v2
+name: certrenewal
+description: Helm chart for renewing the LetsEncrypt Certificates automatically
+type: application
+version: 1.0.0
+type: application
+maintainers:
+- name: Kadiri Purushotham Reddy
+  email: kadiri.reddy@8x8.com 
+

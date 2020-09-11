@@ -26,7 +26,7 @@ FROM base as builder
 
 # Dependencies for python packages
 RUN apk update && apk upgrade
-RUN apk --no-cache add --virtual .buildset build-base gcc libffi-dev openssl-dev
+RUN apk --no-cache add --virtual .buildset build-base gcc libffi-dev openssl-dev jq
 
 COPY /src/knox/requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
@@ -45,6 +45,6 @@ COPY /src /app
 
 WORKDIR /app
 
-ENTRYPOINT ["/usr/bin/env"]
-CMD ["bash"]
+RUN chmod +x /app/StoreRenewedCertInVault.sh
 
+ENTRYPOINT ["sh","/app/StoreRenewedCertInVault.sh"]

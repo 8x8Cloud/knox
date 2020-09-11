@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-server-details
+  namespace: default
+data:
+  DOMAINSEARCH: {{ .Values.certrenewal.domainsearch }}
+  KNOX_VAULT_URL: {{ .Values.certrenewal.knox.vaulturl }}
+  KNOX_VAULT_MOUNT: {{ .Values.certrenewal.knox.vaultmount }}
+  KNOX_STORE_ENGINE: {{ .Values.certrenewal.knox.vaultstoreengine }}
+  DNSPLUGIN: {{ (split "/" .Values.certrenewal.image.url)._1 | trimAll "certbot-" }}
+  EMAIL: {{ .Values.certrenewal.email }}
