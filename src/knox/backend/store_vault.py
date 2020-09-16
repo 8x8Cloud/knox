@@ -25,7 +25,7 @@ from loguru import logger
 
 from .store_engine import StoreEngine
 from .store_object import StoreObject
-
+from jinja2 import Environment, FileSystemLoader
 
 class VaultClient:
     """Client commands not available via hvac"""
@@ -186,7 +186,18 @@ class VaultClient:
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
                                                          mount_point=mp,
                                                          secret=obj.data['cert_info'])
-
+            self.connect()
+            list_policies_resp = client.sys.list_policies()['data']['policies']
+            if "readaccess-to-the-cerbody-of-"+obj.data['cert_info']['subject']['commonName'] in list_policies_resp:
+                pass
+            else:
+                policy = Environment(loader=FileSystemLoader('templates')).get_template('explicit-policy-to-certbody.js').render(path=obj.path_name)
+                logger.debug("Creating explict read access policy to "+obj.path_name+"/cert_body")
+                self.connect()
+                client.sys.create_or_update_policy(
+                     name="readaccess-to-the-cerbody-of-"+obj.data['cert_info']['subject']['commonName'],
+                     policy=policy,
+                )
         except hvac.exceptions.Forbidden as ve:
             logger.error(f'Permission denied writing {obj.path_name}: {ve}')
             sys.exit(2)
