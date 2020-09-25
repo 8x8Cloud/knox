@@ -1,3 +1,3 @@
-path "{{path}}/cert_body" {
+path "{{mountpoint}}{{path}}/cert_body" {
   capabilities = [ "read" ]
 }
