@@ -188,14 +188,15 @@ class VaultClient:
                                                          secret=obj.data['cert_info'])
             self.connect()
             list_policies_resp = client.sys.list_policies()['data']['policies']
-            if "readaccess-to-the-cerbody-of-"+obj.data['cert_info']['subject']['commonName'] in list_policies_resp:
+            commonname = obj.data['cert_info']['subject']['commonName']
+            if "knox-read-"+commonname in list_policies_resp:
                 pass
             else:
-                policy = Environment(loader=FileSystemLoader('templates')).get_template('explicit-policy-to-certbody.js').render(path=obj.path_name)
-                logger.debug("Creating explict read access policy to "+obj.path_name+"/cert_body")
+                policy = Environment(loader=FileSystemLoader('templates')).get_template('explicit-policy-to-certbody.js').render(path=obj.path_name,mountpoint=mp)
+                logger.debug("Creating explict read access policy to "+mp+obj.path_name+"/cert_body")
                 self.connect()
                 client.sys.create_or_update_policy(
-                     name="readaccess-to-the-cerbody-of-"+obj.data['cert_info']['subject']['commonName'],
+                     name="knox-read-"+commonname,
                      policy=policy,
                 )
         except hvac.exceptions.Forbidden as ve:
