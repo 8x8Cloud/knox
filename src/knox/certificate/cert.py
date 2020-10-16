@@ -34,7 +34,8 @@ from loguru import logger
 
 from ..backend import StoreObject
 from .cert_engine import CertDnsEngine
-
+import validators
+from cryptography.x509.oid import ExtensionOID
 
 class Cert(StoreObject):
     """Object representation of a TLS certificate"""
@@ -65,12 +66,14 @@ class Cert(StoreObject):
     def __init__(self, settings: LazySettings, common_name=None) -> None:
         """Constructor for Cert"""
         self._settings = settings
-        self._common_name = self.valid_name(common_name)
-        self._mount = self._settings['KNOX_VAULT_MOUNT']
         self._body = ""
         self._info = ""
-        self._type = ""
-        super().__init__(name=self._common_name, path=self.store_path(), body=self._body, info=self._info)
+        if validators.domain(common_name):
+           self._common_name = self.valid_name(common_name)
+           super().__init__(name=self._common_name, path=self.store_path(), body=self._body, info=self._info)
+        else:
+           self._common_name = common_name
+           super().__init__(name=self._common_name, path=self._settings.VAULT_CLIENT_CERTPATH, body=self._body, info=self._info)
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_body = self._jinja.get_template('body_template.js')
         self._tmpl_info = self._jinja.get_template('info_template.js')
@@ -100,11 +103,14 @@ class Cert(StoreObject):
         """Match the objects common name to the true common name from the certificate and
         swap out '*' astrix for the keyword wildcard
         """
-        self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
-        self.name = self.valid_name(self._common_name)
-
-        """Ensure path is the inverse of the true cert common name"""
-        self.path = self.store_path()
+        if validators.domain(self.valid_name(self._data['cert_info']['subject']['commonName'])):
+           self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
+           self.name = self.valid_name(self._common_name)
+           """Ensure path is the inverse of the true cert common name"""
+           self.path = self.store_path()
+        else:
+           self.name = self.valid_name(self._data['cert_info']['subject']['commonName'])
+           self.path = self._settings.VAULT_CLIENT_CERTPATH
 
     @property
     def mount(self) -> str:
@@ -191,6 +197,17 @@ class Cert(StoreObject):
             'serial_number': f'{cert.serial_number}',
             'key': key_info
         }, indent=8)
+    
+    def subjectaltnames(self) -> str:
+        """Return Subject alternate names"""
+        try:
+          cert = self._x509
+          ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+          return json.dumps(f'{ext.value.get_values_for_type(x509.DNSName)}')
+        except:
+          return json.dumps(" ")
+        else:
+          pass
 
     def isValid(self) -> bool:
         """Check certificate validity period"""
