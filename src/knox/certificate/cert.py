@@ -103,7 +103,7 @@ class Cert(StoreObject):
         """Match the objects common name to the true common name from the certificate and
         swap out '*' astrix for the keyword wildcard
         """
-        if validators.domain(self.valid_name(self._data['cert_info']['subject']['commonName'])):
+        if validators.domain(self._data['cert_info']['subject']['commonName']):
            self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
            self.name = self.valid_name(self._common_name)
            """Ensure path is the inverse of the true cert common name"""
