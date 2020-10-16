@@ -9,6 +9,7 @@
         "KNOX_VAULT_URL": "http://127.0.0.1:8200",
         "KNOX_VAULT_TOKEN": "knox",
         "KNOX_VAULT_MOUNT": "certificates",
+	"KNOX_VAULT_CLIENT_CERTPATH": "/client",
         "KNOX_VAULT_CLIENT_MAX_VERSIONS": "10",
         "KNOX_VAULT_CLIENT_CAS": "True",
         "KNOX_FILE_HOME": "./test",
@@ -58,6 +59,7 @@
         "KNOX_VAULT_URL": "http://127.0.0.1:8200",
         "KNOX_VAULT_TOKEN": "knox",
         "KNOX_VAULT_MOUNT": "certificates",
+	"KNOX_VAULT_CLIENT_CERTPATH": "/client",
         "KNOX_VAULT_CLIENT_MAX_VERSIONS": "10",
         "KNOX_VAULT_CLIENT_CAS": "True",
         "KNOX_FILE_HOME": "./test"

@@ -156,10 +156,11 @@ def store(ctx) -> dict:
               default='JSON',
               show_default=True,
               help="Type of output")
-@click.argument("name")
+@click.argument("name",required=False)
+@click.option("--subject-search",required=False,help="Subject alternativename search")
 @click.pass_context
 @logger.catch()
-def find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
+def find(ctx, name, subject_search, file: str = 'stdout', output: str = 'JSON') -> dict:
     """Given a certificate NAME pattern search the store.
 
     NAME can be similar to a full file path or the certificates common name.
@@ -167,7 +168,12 @@ def find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
     Supports wild cards. *.example.com
 
     """
-    ctx.obj['STORE_FIND_NAME'] = name
+    if (( subject_search and subject_search != "None" ) and ( name and name != "None" )):
+       sys.exit("Pass only 1 arugument i.e either --subject-search or name\n\tknox store find --subject-search <domain>\n\t\tor\n\tknox store find <domain>")
+    elif subject_search and subject_search != "None":
+       ctx.obj['STORE_FIND_NAME'] = subject_search
+    else:
+       ctx.obj['STORE_FIND_NAME'] = name
     ctx.obj['STORE_FIND_OUTPUT'] = output
     ctx.obj['STORE_FIND_OUTFILE'] = file
     knox = Knox(ctx.obj['LOG_LEVEL'])
@@ -187,7 +193,25 @@ def find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
                 csv_writer.writerow(rec.values())
 
         handle.close()
+    else:
+        results = knox.store.subjectaltfind(pattern=subject_search)  # noqa F841
+        if len(results)==0:
+           logger.info("I didnt find any domain that has subject alternative name with : "+subject_search )
+           sys.exit()
+        handle = open(file, 'w') if file else sys.stdout
+        if output == 'JSON':
+            handle.write(json.dumps(results, indent=4))
+        else:
+            csv_writer = csv.writer(handle)
+            count = 0
+            for rec in results:
+                if count == 0:
+                    header = rec.keys()
+                    csv_writer.writerow(header)
+                    count += 1
+                csv_writer.writerow(rec.values())
 
+        handle.close()
     return ctx
 
 
