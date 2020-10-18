@@ -124,7 +124,6 @@ class ACMStoreEngine(StoreEngine):
                 )
 
             cert.arn = acm_res.get('CertificateArn')
-            cert.add_delivery(acm_res)
             logger.trace(
                 f'[ACMStoreEngine]: Certificate uploaded:\n'
                 f'Region: {self.region}\n'

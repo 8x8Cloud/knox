@@ -40,7 +40,6 @@ class Cert(StoreObject):
     _body: str  #: String representation of private, chain and public portions of certificate as a map/json
     _info: str  #: Certificate details
     _data: {}   #: Combined body and info map
-    _deliveries: list  #: Record of where the certificate has been deployed
     _file: object
     _x509: x509
     _common_name: str
@@ -67,13 +66,11 @@ class Cert(StoreObject):
         self._body = ""
         self._info = ""
         self._type = ""
-        self._deliveries = []
         super().__init__(name=self._common_name, path=self.store_path(), body=self._body, info=self._info)
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_body = self._jinja.get_template('body_template.js')
         self._tmpl_info = self._jinja.get_template('info_template.js')
         self._tmpl_data = self._jinja.get_template('data_template.js')
-        self._tmpl_deli = self._jinja.get_template('deli_template.js')
 
     def load_x509(self, path: str) -> None:
         """Given path to PEM x509 read in certificate
@@ -252,13 +249,6 @@ class Cert(StoreObject):
             self.load(pub=certfile, key=privkey, chain=chainfile, certtype=Cert.PEM.name)
         except Exception:
             logger.error(f'Failed to generate certificate {self._common_name}')
-
-    @property
-    def deliveries(self) -> str:
-        return json.dumps(self._deliveries, indent=4)
-
-    def add_delivery(self, delivery: str) -> None:
-        return self._deliveries.append(delivery)
 
 
 class CertUnsupportedTypeException(Exception):
