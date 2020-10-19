@@ -85,11 +85,11 @@ def cert(ctx, pub: str, key: str, type: str = 'PEM', chain: str = None):
     ctx.obj['CERT_TYPE'] = type.upper()
 
 
-@cert.command(no_args_is_help=True)
+@cert.command(name="save", no_args_is_help=True)
 @click.argument("name")
 @click.pass_context
 @logger.catch()
-def save(ctx, name):
+def cert_save(ctx, name):
     """Store an existing certificate
     """
     ctx.obj['CERT_NAME'] = name
@@ -107,12 +107,12 @@ def save(ctx, name):
     knox.store.save(certificate)
 
 
-@cert.command(no_args_is_help=True)
+@cert.command(name="get", no_args_is_help=True)
 @click.argument("name")
 @click.pass_context
 @logger.catch()
-def get(ctx, name):
-    """Retrieve an existing certificate for a given common name from the store
+def cert_get(ctx, name):
+    """Retrieve an existing certificate for a given common name
     """
     ctx.obj['CERT_NAME'] = name
     knox = Knox(ctx.obj['LOG_LEVEL'])
@@ -127,11 +127,11 @@ def get(ctx, name):
         chainf.write(certificate.body['chain'])
 
 
-@cert.command(no_args_is_help=True)
+@cert.command(name="gen", no_args_is_help=True)
 @click.argument("name")
 @click.pass_context
 @logger.catch()
-def gen(ctx, name):
+def cert_gen(ctx, name):
     """Create and store a new certificate for a given common name
     """
     ctx.obj['CERT_NAME'] = name
@@ -142,6 +142,32 @@ def gen(ctx, name):
     knox.store.save(certificate)
 
 
+@cert.command(name="aws", no_args_is_help=True)
+@click.argument("name")
+@click.option("--region", default=None, help="Default AWS region")
+@click.option("--profile", default=None, help="Default AWS profile to use")
+@click.pass_context
+@logger.catch()
+def cert_aws(ctx, name, region, profile):
+    """Store a certificate for a given common name in AWS
+    """
+
+    ctx.obj['CERT_NAME'] = name
+    pub = ctx.obj['CERT_PUB']
+    key = ctx.obj['CERT_KEY']
+    chain = ctx.obj['CERT_CHAIN']
+    certtype = ctx.obj['CERT_TYPE']
+
+    knox = Knox(ctx.obj['LOG_LEVEL'])
+    certificate = Cert(knox.settings, common_name=name)
+    certificate.load(pub=pub, key=key, chain=chain, certtype=certtype)
+    knox.attach("aws")
+    # Save to the attached AWS ACM store
+    knox.stores("aws").save(certificate)
+    # Save to the default store
+    knox.store.save(certificate)
+
+
 @cli.group(no_args_is_help=True)
 @click.pass_context
 def store(ctx) -> dict:
@@ -149,7 +175,7 @@ def store(ctx) -> dict:
     pass
 
 
-@store.command(no_args_is_help=True)
+@store.command(name="find", no_args_is_help=True)
 @click.option("--file", "-f", help="Output file, default stdout")
 @click.option("--output", "-o",
               type=click.Choice(['JSON', 'CSV'], case_sensitive=False),
@@ -159,7 +185,7 @@ def store(ctx) -> dict:
 @click.argument("name")
 @click.pass_context
 @logger.catch()
-def find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
+def store_find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
     """Given a certificate NAME pattern search the store.
 
     NAME can be similar to a full file path or the certificates common name.

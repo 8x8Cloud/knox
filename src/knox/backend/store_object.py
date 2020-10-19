@@ -31,9 +31,9 @@ class StoreObject:
     def __init__(self, name: str, path: str, body: str, info: str, type=None) -> None:
         """Constructor for StoreObject"""
 
-        self._name = name  #: [TODO 5/16/20] ljohnson name validator
-        self._path = path  #: [TODO 5/16/20] ljohnson path validator
-        self._body = body  #: [TODO 5/16/20] ljohnson body and info validator
+        self._name = name
+        self._path = path
+        self._body = body
         if type:
             self._type = type
         self._info = info
@@ -84,6 +84,10 @@ class StoreObject:
             return self._type
         else:
             return None
+
+    @type.setter
+    def type(self, value) -> None:
+        self._type = value
 
     @property
     def version(self) -> int:

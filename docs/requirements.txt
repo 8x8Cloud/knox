@@ -1,4 +1,6 @@
 recommonmark
+boto3
+botocore
 sphinx>=1.3
 sphinx-rtd-theme
 click==7.1.2

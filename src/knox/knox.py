@@ -22,6 +22,7 @@ class Knox:
     """Composite class for Knox package"""
     _conf: config.Conf
     _store: backend.Store
+    _stores: dict
     _cli: dict
 
     def __init__(self, loglevel=None) -> None:
@@ -29,6 +30,7 @@ class Knox:
 
         self._conf = config.Conf(loglevel)
         self._store = backend.Store(self._conf.settings)
+        self._stores = {}
 
     @property
     def settings(self) -> config.Conf.settings:
@@ -42,5 +44,13 @@ class Knox:
 
     @property
     def store(self) -> backend.Store:
-        """Access to the instantiated store engine"""
+        """Access to the default store engine"""
         return self._store
+
+    def stores(self, engine_name: str = None) -> backend.Store:
+        """Retrieve a named store, otherwise the default store"""
+        return self._stores[engine_name] if engine_name is not None else self._store
+
+    def attach(self, engine_name: str) -> bool:
+        """Instantiate an additional store"""
+        self._stores[engine_name] = backend.Store(self._conf.settings, engine_name)
