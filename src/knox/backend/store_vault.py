@@ -27,6 +27,7 @@ from .store_engine import StoreEngine
 from .store_object import StoreObject
 from jinja2 import Environment, FileSystemLoader
 
+
 class VaultClient:
     """Client commands not available via hvac"""
 
