@@ -189,16 +189,17 @@ class VaultClient:
             self.connect()
             list_policies_resp = client.sys.list_policies()['data']['policies']
             commonname = obj.data['cert_info']['subject']['commonName']
-            if "knox-read-"+commonname in list_policies_resp:
+            policyname = f'knox-read-{commonname}'
+            if policyname in list_policies_resp:
                 pass
             else:
-                policy = Environment(loader=FileSystemLoader('templates')).get_template('explicit-policy-to-certbody.js').render(path=obj.path_name,mountpoint=mp)
-                logger.debug("Creating explict read access policy to "+mp+obj.path_name+"/cert_body")
+                policy = Environment(loader=FileSystemLoader('templates')).\
+                                            get_template('explicit-policy-to-certbody.js').\
+                                            render(path=obj.path_name, mountpoint=mp)
+                logger.debug(f'Creating explict read access policy {policyname} for {mp}{obj.path_name}/cert_body')
                 self.connect()
-                client.sys.create_or_update_policy(
-                     name="knox-read-"+commonname,
-                     policy=policy,
-                )
+                client.sys.create_or_update_policy(name=policyname, policy=policy)
+
         except hvac.exceptions.Forbidden as ve:
             logger.error(f'Permission denied writing {obj.path_name}: {ve}')
             sys.exit(2)
