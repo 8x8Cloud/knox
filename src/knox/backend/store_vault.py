@@ -201,19 +201,19 @@ class VaultClient:
                 client.sys.create_or_update_policy(name=policyname, policy=policy)
 
         except hvac.exceptions.Forbidden as ve:
-            logger.error(f'Permission denied writing {obj.path_name}: {ve}')
+            logger.error(f'Permission denied writing {obj.path_name} and or {policyname}: {ve}')
             sys.exit(2)
         except hvac.exceptions.InvalidPath as ve:
-            logger.error(f'Path invalid for {obj.path_name}: {ve}')
+            logger.error(f'Path invalid for {obj.path_name} and or {policyname}: {ve}')
             sys.exit(2)
         except hvac.exceptions.Unauthorized as ve:
-            logger.error(f'Credentials not authorized to write {obj.path_name}: {ve}')
+            logger.error(f'Credentials not authorized to write {obj.path_name} and or {policyname}: {ve}')
             sys.exit(2)
         except Exception as vex:
             logger.error(f'Failed to write StoreObject to Vault {vex}')
             sys.exit(2)
         else:
-            logger.info(f'Successfully stored {obj.path_name}')
+            logger.info(f'Successfully stored {obj.path_name} and {policyname}')
             return True
 
     def read(self, path: str, name: str, type=None) -> tuple:
