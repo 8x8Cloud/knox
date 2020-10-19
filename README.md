@@ -1,5 +1,5 @@
 
-What is Knox v0.1.0
+What is Knox v0.1.3
 ====================
 
 The name is derived from "Fort Knox" the safest place to store valuables in history. At least that is the myth. This tool or set of utilities is explicitly for managing TLS certificates including metadata about them and storing it in a backend.
@@ -36,7 +36,7 @@ Or run it as a container::
 
     docker run 8x8cloud/knox
 
-See [Dynaconf](https://dynaconf.readthedocs.io/en/latest/) for how the configuration is read in. At its simplest just add environment variables into a `.env` file.
+See [Dynaconf](https://dynaconf.readthedocs.io/) for how the configuration is read in. At its simplest just add environment variables into a `.env` file.
 
 
 Metadata

@@ -41,7 +41,6 @@ class Conf:
         self._version = pkg_resources.get_distribution("knox").version
         self._settings = settings
         logger.debug(f'{self._banner} 🏰 Knox version {self._version}\n')
-        logger.trace(self._settings.dynaconf_banner)
         logger.debug("Settings managed with Dynaconf, learn more at http://github.com/rochacbruno/dynaconf")
         logger.debug(f'dynaconf loaded? {self._settings.configured}')
 

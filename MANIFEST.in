@@ -36,3 +36,12 @@ include *.png
 
 # added by check_manifest.py
 recursive-include tests *.js
+
+# added by check_manifest.py
+recursive-include examples *.py
+
+# added by check_manifest.py
+recursive-include docs *.png
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs *.txt

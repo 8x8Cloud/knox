@@ -42,7 +42,7 @@ class VaultClient:
     __mounts: json        #: Map of Vault mounts
 
     def __init__(self, settings: LazySettings) -> None:
-        """Constructor for VaultRESTClient"""
+        """Constructor for VaultClient"""
         self.__url = settings.VAULT_URL
         self.__approle = settings.VAULT_APPROLE
         self.__secretid = settings.VAULT_SECRET_ID
@@ -186,6 +186,7 @@ class VaultClient:
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
                                                          mount_point=mp,
                                                          secret=obj.data['cert_info'])
+
         except hvac.exceptions.Forbidden as ve:
             logger.error(f'Permission denied writing {obj.path_name}: {ve}')
             sys.exit(2)
@@ -345,7 +346,8 @@ class VaultStoreEngine(StoreEngine):
                                body=certbody['data']['data'],
                                info=certinfo['data']['data'],
                                type=type)
-            cert._data = {'cert_body': certbody['data']['data'], 'cert_info': certinfo['data']['data']}
+            cert._data = {'cert_body': certbody['data']['data'],
+                          'cert_info': certinfo['data']['data']}
 
         except Exception as vex:
             logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')
