@@ -1,5 +1,5 @@
 
-What is Knox v0.1.3
+What is Knox v0.1.4
 ====================
 
 The name is derived from "Fort Knox" the safest place to store valuables in history. At least that is the myth. This tool or set of utilities is explicitly for managing TLS certificates including metadata about them and storing it in a backend.
@@ -176,6 +176,38 @@ Verify you can talk to vault using the vault cli::
 	Cluster Name    vault-cluster-31da8ea9
 	Cluster ID      043bfc14-09b1-6033-1c3b-8aeace3adc60
 	HA Enabled      false
+
+Setup your local app role::
+
+    # Add the cert admin policy
+    >vault policy write cert_admin config/cert_admin-policy.hcl
+    Success! Uploaded policy: cert_admin
+
+    # Enable approle auth
+    >vault auth enable approle
+    Success! Enabled approle auth method at: approle/
+
+    # Create an app role
+    >vault write auth/approle/role/knox-admin \
+      bind_secret_id=true \
+      period=0 \
+      policies="cert_admin" \
+      token_num_uses=1 \
+      token_ttl=5m \
+      token_max_tll=30m \
+      secret_id_num_uses=0 \
+      secret_id_ttl=0 \
+      token_no_default_policy=true
+    Success! Data written to: auth/approle/role/knox-admin
+
+    # Read role-id
+    vault read auth/approle/role/knox-admin/role-id
+    export KNOX_VAULT_APPROLE=$(vault read -format=json auth/approle/role/knox-admin/role-id | jq -r '.data.role_id')
+
+    # generate secret-id
+    vault write -f auth/approle/role/knox-admin/secret-id
+    export KNOX_VAULT_SECRET_ID=$(vault write -f -format=json auth/approle/role/knox-admin/secret-id | jq -r '.data.secret_id')
+
 
 Update your knox configuration using `.env` or direct environment variables::
 

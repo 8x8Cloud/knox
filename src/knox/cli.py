@@ -40,14 +40,16 @@ from .knox import Knox
               show_default=True,
               help="Sets the level of logging displayed")
 @click.option("--verbose", "-v", is_flag=True, default=False, help="Display log output to console")
+@click.option("--admin", is_flag=True, default=False, help="Enable admin actions", hidden=True)
 @click.version_option(version=pkg_resources.get_distribution('knox').version)
 @click.pass_context
 @logger.catch()
-def cli(ctx, verbose: bool = False, log: str = 'INFO'):
+def cli(ctx, verbose: bool = False, log: str = 'INFO', admin: bool = False):
     """Utilities for managing and storing TLS certificates using backing store (Vault)."""
     ctx.ensure_object(dict)
     ctx.obj['VERBOSE'] = verbose
     ctx.obj['LOG_LEVEL'] = log
+    ctx.obj['ADMIN_MODE'] = admin
     logger.remove()
     if verbose:
         logger.add(sys.stdout,
@@ -98,7 +100,7 @@ def cert_save(ctx, name):
     chain = ctx.obj['CERT_CHAIN']
     certtype = ctx.obj['CERT_TYPE']
 
-    knox = Knox(ctx.obj['LOG_LEVEL'])
+    knox = Knox(ctx)
     certificate = Cert(knox.settings, common_name=name)
     certificate.load(pub=pub,
                      key=key,
@@ -115,7 +117,7 @@ def cert_get(ctx, name):
     """Retrieve an existing certificate for a given common name
     """
     ctx.obj['CERT_NAME'] = name
-    knox = Knox(ctx.obj['LOG_LEVEL'])
+    knox = Knox(ctx)
     certificate = Cert(knox.settings, common_name=name)
     certificate.type = ctx.obj['CERT_TYPE']
     certificate = knox.store.get(certificate.store_path(), name=name, type=certificate.type)
@@ -136,7 +138,7 @@ def cert_gen(ctx, name):
     """
     ctx.obj['CERT_NAME'] = name
 
-    knox = Knox(ctx.obj['LOG_LEVEL'])
+    knox = Knox(ctx)
     certificate = Cert(knox.settings, common_name=name)
     certificate.generate()
     knox.store.save(certificate)
@@ -158,7 +160,7 @@ def cert_aws(ctx, name, region, profile):
     chain = ctx.obj['CERT_CHAIN']
     certtype = ctx.obj['CERT_TYPE']
 
-    knox = Knox(ctx.obj['LOG_LEVEL'])
+    knox = Knox(ctx)
     certificate = Cert(knox.settings, common_name=name)
     certificate.load(pub=pub, key=key, chain=chain, certtype=certtype)
     knox.attach("aws")
@@ -196,7 +198,7 @@ def store_find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
     ctx.obj['STORE_FIND_NAME'] = name
     ctx.obj['STORE_FIND_OUTPUT'] = output
     ctx.obj['STORE_FIND_OUTFILE'] = file
-    knox = Knox(ctx.obj['LOG_LEVEL'])
+    knox = Knox(ctx)
     if name:
         results = knox.store.find(pattern=name)  # noqa F841
         handle = open(file, 'w') if file else sys.stdout
