@@ -23,12 +23,13 @@ class Knox:
     _conf: config.Conf
     _store: backend.Store
     _stores: dict
-    _cli: dict
+    _ctx: dict
 
-    def __init__(self, loglevel=None) -> None:
+    def __init__(self, ctx: dict) -> None:
         """Constructor for Knox """
-
-        self._conf = config.Conf(loglevel)
+        self._ctx = ctx
+        self._conf = config.Conf(ctx.obj['LOG_LEVEL'])
+        self._conf.settings.set('CTX', ctx)
         self._store = backend.Store(self._conf.settings)
         self._stores = {}
 

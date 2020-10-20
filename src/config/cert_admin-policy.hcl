@@ -9,3 +9,12 @@ path "sys/policy/*"
 
 path "sys/policy"
 { capabilities = [ "read" ] }
+
+# Allow knox to seed the kv store if it doesn't exist
+# This requires using --admin hidden cli param
+path "sys/mounts"
+{ capabilities = [ "read","list" ]}
+
+# This should match the setting KNOX_VAULT_MOUNT
+path "sys/mounts/certificate"
+{ capabilities = [ "create","update" ]}

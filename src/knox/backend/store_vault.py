@@ -48,7 +48,15 @@ class VaultClient:
         self.__approle = settings.VAULT_APPROLE
         self.__secretid = settings.VAULT_SECRET_ID
         self.__mount = settings.VAULT_MOUNT
+        self.__mounts = {}
         self.__vault_client = hvac.Client(url=self.__url)
+        self.__settings = settings
+
+    def initialize(self) -> bool:
+        if self.__settings.CTX.obj['ADMIN_MODE']:
+            return self.new_mount(mount=self.mount)
+        else:
+            return self.connect()
 
     def connect(self) -> bool:
         try:
@@ -69,8 +77,13 @@ class VaultClient:
     def url(self) -> str:
         return self.__url
 
+    @property
     def mount(self) -> str:
         return self.__mount
+
+    @property
+    def token(self) -> str:
+        return self.__token
 
     def logout(self) -> bool:
         return self.__vault_client.logout()
@@ -167,15 +180,17 @@ class VaultClient:
             :return: Boolean
         """
         self.__mounts = self._get("/v1/sys/mounts")
-        if mount+"/" not in self.__mounts['data'].keys():
+        logger.trace(f'{self.__class__}::new_mount {self.__mounts}')
+        if self.__mounts and mount+"/" not in self.__mounts['data'].keys():
             logger.info(f'Vault mount {self.__url}/v1/sys/mounts/{mount} does not exist, creating')
             self._put(f'/v1/sys/mounts/{mount}', '{"type": "kv-v2"}')
             self.__mounts = self._get("/v1/sys/mounts")
-        return mount+"/" in self.__mounts['data'].keys()
+        return bool(self.__mounts)
 
     def upsert(self, obj: StoreObject) -> bool:
         client = self.__vault_client
-        mp = self.mount()
+        mp = self.mount
+        policyname = ""
 
         try:
             self.connect()
@@ -195,20 +210,29 @@ class VaultClient:
                 pass
             else:
                 policy = Environment(loader=FileSystemLoader('templates')).\
-                                            get_template('explicit-policy-to-certbody.js').\
+                                            get_template('explicit-policy-to-cert.js').\
                                             render(path=obj.path_name, mountpoint=mp)
                 logger.debug(f'Creating explict read access policy {policyname} for {mp}{obj.path_name}/cert_body')
                 self.connect()
                 client.sys.create_or_update_policy(name=policyname, policy=policy)
 
         except hvac.exceptions.Forbidden as ve:
-            logger.error(f'Permission denied writing {obj.path_name} and or {policyname}: {ve}')
+            policyphrase = ""
+            if len(policyname) > 0:
+                policyphrase = f'and or {policyname}'
+            logger.error(f'Permission denied writing {obj.path_name} {policyphrase}: {ve}')
             sys.exit(2)
         except hvac.exceptions.InvalidPath as ve:
-            logger.error(f'Path invalid for {obj.path_name} and or {policyname}: {ve}')
+            policyphrase = ""
+            if len(policyname) > 0:
+                policyphrase = f'and or {policyname}'
+            logger.error(f'Path invalid for {obj.path_name} {policyphrase}: {ve}')
             sys.exit(2)
         except hvac.exceptions.Unauthorized as ve:
-            logger.error(f'Credentials not authorized to write {obj.path_name} and or {policyname}: {ve}')
+            policyphrase = ""
+            if len(policyname) > 0:
+                policyphrase = f'and or {policyname}'
+            logger.error(f'Credentials not authorized to write {obj.path_name} {policyphrase}: {ve}')
             sys.exit(2)
         except Exception as vex:
             logger.error(f'Failed to write StoreObject to Vault {vex}')
@@ -230,10 +254,10 @@ class VaultClient:
             self.connect()
             logger.trace(f'Attempting to read \n\tbody:{fullpathbody}\n\tinfo:{fullpathinfo}')
             logger.trace(f'client.url: {client.url}')
-            logger.trace(f'mount: {self.mount()}')
-            certbody = client.secrets.kv.v2.read_secret_version(path=fullpathbody, mount_point=self.mount())
+            logger.trace(f'mount: {self.mount}')
+            certbody = client.secrets.kv.v2.read_secret_version(path=fullpathbody, mount_point=self.mount)
             self.connect()
-            certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount())
+            certinfo = client.secrets.kv.v2.read_secret_version(path=fullpathinfo, mount_point=self.mount)
             return certbody, certinfo
 
         except hvac.exceptions.Forbidden as ve:
@@ -263,7 +287,7 @@ class VaultClient:
             rootpath = rootpath.replace('//', '/')
             path = rootpath
             logger.trace(f'Searching {path}')
-            secrets = client.secrets.kv.list_secrets(path=path, mount_point=self.mount())
+            secrets = client.secrets.kv.list_secrets(path=path, mount_point=self.mount)
             secrets_keys = secrets.get('data').get('keys')
             if isinstance(secrets_keys, list):
                 if 'cert_info' not in secrets_keys:
@@ -275,7 +299,7 @@ class VaultClient:
                     cert_common_name = rootpath.split('/')[-3]
                     self.connect()
                     cert_info_dict = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
-                                                                              mount_point=self.mount())
+                                                                              mount_point=self.mount)
                     current_date = datetime.now()
                     cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
                                                          .get('validity').get('not_valid_after'), '%Y-%m-%d %H:%M:%S')
@@ -319,7 +343,7 @@ class VaultStoreEngine(StoreEngine):
             logger.error(f'🛑 Failed to connect to Vault {self.__client.url()}')
 
     def initialize(self) -> bool:
-        return self.open()
+        return self.__client.initialize()
 
     def open(self) -> bool:
         """Ensure the vault client is connected"""
