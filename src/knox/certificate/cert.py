@@ -18,6 +18,7 @@ import ast
 import enum
 import json
 from binascii import hexlify
+import datetime
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -190,6 +191,13 @@ class Cert(StoreObject):
             'serial_number': f'{cert.serial_number}',
             'key': key_info
         }, indent=8)
+
+    def isValid(self) -> bool:
+        """Check certificate validity period"""
+        logger.trace(f'Is the date within the validity dates?\n\tNot valid after: {self._x509.not_valid_after}'
+                     f'\n\tNow: {datetime.datetime.now()}'
+                     f'\n\tNot valid before {self._x509.not_valid_before}')
+        return self._x509.not_valid_after > datetime.datetime.now() > self._x509.not_valid_before
 
     @staticmethod
     def to_store_path(common_name: str) -> str:
