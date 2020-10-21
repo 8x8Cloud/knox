@@ -197,17 +197,15 @@ class Cert(StoreObject):
             'serial_number': f'{cert.serial_number}',
             'key': key_info
         }, indent=8)
-    
+
     def subjectaltnames(self) -> str:
         """Return Subject alternate names"""
         try:
-          cert = self._x509
-          ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
-          return json.dumps(f'{ext.value.get_values_for_type(x509.DNSName)}')
+            cert = self._x509
+            ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+            return json.dumps(f'{ext.value.get_values_for_type(x509.DNSName)}')
         except:
-          return json.dumps(" ")
-        else:
-          pass
+            return json.dumps(" ")
 
     def isValid(self) -> bool:
         """Check certificate validity period"""
