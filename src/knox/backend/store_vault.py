@@ -195,11 +195,13 @@ class VaultClient:
 
         try:
             self.connect()
+            logger.trace(f'updating secret {mp}/{obj.path_name}/cert_body')
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_body",
                                                          mount_point=mp,
                                                          secret=obj.data['cert_body'])
 
             self.connect()
+            logger.trace(f'updating secret {mp}/{obj.path_name}/cert_info')
             client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
                                                          mount_point=mp,
                                                          secret=obj.data['cert_info'])
@@ -210,10 +212,9 @@ class VaultClient:
             if policyname in list_policies_resp:
                 pass
             else:
-                policy = Environment(loader=FileSystemLoader('templates')).\
-                                            get_template('explicit-policy-to-cert.js').\
-                                            render(path=obj.path_name, mountpoint=mp)
+                policy = obj.data['cert_policy']
                 logger.debug(f'Creating explict read access policy {policyname} for {mp}{obj.path_name}/cert_body')
+                logger.trace(f'{self.__class__}::upsert {policyname}:\n{policy}')
                 self.connect()
                 client.sys.create_or_update_policy(name=policyname, policy=policy)
 
