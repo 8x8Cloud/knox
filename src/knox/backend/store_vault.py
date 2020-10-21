@@ -21,8 +21,6 @@ from datetime import datetime
 import hvac
 import requests
 from dynaconf import LazySettings
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
 from loguru import logger
 
 from .store_engine import StoreEngine
