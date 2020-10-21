@@ -30,7 +30,7 @@ RUN apk --no-cache add --virtual .buildset build-base gcc libffi-dev openssl-dev
 
 COPY /src/knox/requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
-RUN pip install knox==0.1.8
+RUN pip install knox==0.1.9
 
 LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.maintainer="lance.johnson@8x8.com" \
@@ -39,7 +39,7 @@ LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://knox.readthedocs.org" \
       org.label-schema.vcs-url="git@github.com/8x8cloud/knox.git" \
       org.label-schema.vendor="8x8" \
-      org.label-schema.version='0.1.8'
+      org.label-schema.version='0.1.9'
 
 COPY /src /app
 
