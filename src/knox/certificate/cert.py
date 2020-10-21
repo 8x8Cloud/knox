@@ -15,10 +15,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License."""
 import ast
+import datetime
 import enum
 import json
 from binascii import hexlify
-import datetime
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
