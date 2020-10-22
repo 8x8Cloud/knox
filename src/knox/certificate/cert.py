@@ -20,6 +20,7 @@ import enum
 import json
 from binascii import hexlify
 
+import validators
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -34,14 +35,14 @@ from loguru import logger
 
 from ..backend import StoreObject
 from .cert_engine import CertDnsEngine
-import validators
-from cryptography.x509.oid import ExtensionOID
+
 
 class Cert(StoreObject):
     """Object representation of a TLS certificate"""
     _body: str  #: String representation of private, chain and public portions of certificate as a map/json
     _info: str  #: Certificate details
     _data: {}   #: Combined body and info map
+    _path: str
     _policy: str
     _mount: str
     _file: object
@@ -66,14 +67,11 @@ class Cert(StoreObject):
     def __init__(self, settings: LazySettings, common_name=None) -> None:
         """Constructor for Cert"""
         self._settings = settings
+        self._common_name = self.valid_name(common_name)
         self._body = ""
         self._info = ""
-        if validators.domain(common_name):
-           self._common_name = self.valid_name(common_name)
-           super().__init__(name=self._common_name, path=self.store_path(), body=self._body, info=self._info)
-        else:
-           self._common_name = common_name
-           super().__init__(name=self._common_name, path=self._settings.VAULT_CLIENT_CERTPATH, body=self._body, info=self._info)
+        self._type = ""
+        super().__init__(name=self.name, path=self.path, body=self._body, info=self._info)
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_body = self._jinja.get_template('body_template.js')
         self._tmpl_info = self._jinja.get_template('info_template.js')
@@ -103,17 +101,14 @@ class Cert(StoreObject):
         """Match the objects common name to the true common name from the certificate and
         swap out '*' astrix for the keyword wildcard
         """
-        if validators.domain(self._data['cert_info']['subject']['commonName']):
-           self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
-           self.name = self.valid_name(self._common_name)
-           """Ensure path is the inverse of the true cert common name"""
-           self.path = self.store_path()
-        else:
-           self.name = self.valid_name(self._data['cert_info']['subject']['commonName'])
-           self.path = self._settings.VAULT_CLIENT_CERTPATH
+        self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
 
     @property
     def mount(self) -> str:
+        if validators.domain(self._common_name):
+            self._mount = self._settings['KNOX_VAULT_MOUNT']
+        else:
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/client"
         return self._mount
 
     def policy(self) -> str:
@@ -149,11 +144,25 @@ class Cert(StoreObject):
     def valid_name(cls, value: str) -> str:
         """Some engines might have problems with astrix, as they are used for glob searching and or RBAC.
         Replace it with the key word 'wildcard'. This does not affect the actual certificate."""
-        return value.replace('*', 'wildcard')
+        if validators.domain(value):
+            return value.replace('*', 'wildcard')
+        else:
+            return value
 
     def subject(self) -> str:
         """Return the certificate subject details"""
-        return json.dumps({attr.oid._name: attr.value for attr in self._x509.subject}, indent=8)
+        subj = {attr.oid._name: attr.value for attr in self._x509.subject}
+        subj['alternativeNames'] = self.subjectaltnames()
+        return json.dumps(subj, indent=8)
+
+    def subjectaltnames(self) -> str:
+        """Return Subject alternate names"""
+        try:
+            cert = self._x509
+            ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+            return json.dumps(f'{ext.value.get_values_for_type(x509.DNSName)}')
+        except Exception as ex:  # noqa E722
+            return json.dumps(" ")
 
     @property
     def type(self) -> str:
@@ -198,15 +207,6 @@ class Cert(StoreObject):
             'key': key_info
         }, indent=8)
 
-    def subjectaltnames(self) -> str:
-        """Return Subject alternate names"""
-        try:
-            cert = self._x509
-            ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
-            return json.dumps(f'{ext.value.get_values_for_type(x509.DNSName)}')
-        except:
-            return json.dumps(" ")
-
     def isValid(self) -> bool:
         """Check certificate validity period"""
         logger.trace(f'Is the date within the validity dates?\n\tNot valid after: {self._x509.not_valid_after}'
@@ -224,8 +224,18 @@ class Cert(StoreObject):
         domainsplit = common_name.split('.')
         return "/"+"/".join(reversed(domainsplit))
 
-    def store_path(self) -> str:
-        return self.to_store_path(self._common_name)
+    @property
+    def name(self) -> str:
+        self._name = self.valid_name(self._common_name)
+        return self._name
+
+    @property
+    def path(self) -> str:
+        if validators.domain(self.name):
+            self._path = Cert.to_store_path(self.name)
+        else:
+            self._path = self.name
+        return self._path
 
     def __str__(self) -> str:
         return json.dumps(self._data, indent=4)

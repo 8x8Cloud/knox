@@ -20,12 +20,12 @@ from datetime import datetime
 
 import hvac
 import requests
+import validators
 from dynaconf import LazySettings
 from loguru import logger
 
 from .store_engine import StoreEngine
 from .store_object import StoreObject
-import validators
 
 
 class VaultClient:
@@ -279,66 +279,72 @@ class VaultClient:
             :param rootpath: Beginning search path
             :type rootpath: str
             :param rootkey: Used to get commonname from search path
-            :type str:
+            :type rootkey: str
             :param searchresults: Stores the search results..default is empty
-            :type list:
+            :type searchresults: list
             :return: list
             :param subjectsearch: Searching the cert_info based on subject alternative name
-            :type str:
+            :type subjectsearch: str
 
         """
         try:
-          client = self.__vault_client
-          self.connect()
-          rootpath = rootpath.replace('//', '/')
-          path = rootpath
-          logger.trace(f'Searching {path}')
-          secrets = client.secrets.kv.list_secrets(path=path, mount_point=self.mount())
-          secrets_keys = secrets.get('data').get('keys')
-          if isinstance(secrets_keys, list):
-            if 'cert_info' not in secrets_keys:
-              for key in secrets_keys:
-                if self.match != 'True':
-                  subpaths = rootpath + key
-                  self.subjectaltsearch(rootpath=subpaths, rootkey=key, searchresults=searchresults,subjectsearch=subjectsearch)
+            client = self.__vault_client
+            self.connect()
+            rootpath = rootpath.replace('//', '/')
+            path = rootpath
+            logger.trace(f'Searching {path}')
+            secrets = client.secrets.kv.list_secrets(path=path, mount_point=self.mount)
+            secrets_keys = secrets.get('data').get('keys')
+            if isinstance(secrets_keys, list):
+                if 'cert_info' not in secrets_keys:
+                    for key in secrets_keys:
+                        if self.match != 'True':
+                            subpaths = rootpath + key
+                            self.subjectaltsearch(rootpath=subpaths, rootkey=key, searchresults=searchresults,
+                                                  subjectsearch=subjectsearch)
+                        else:
+                            break
                 else:
-                  break
-            else:
-              cert_info_path = rootpath + "cert_info"
-              self.connect()
-              cert_info_dict = client.secrets.kv.v2.read_secret_version(path=cert_info_path,mount_point=self.mount())
-              if subjectsearch in cert_info_dict.get('data').get('data').get('subject_alt_names'):
-                 self.match = 'True'
-                 cert_common_name = cert_info_dict.get('data').get('data').get('subject').get('commonName')
-                 current_date = datetime.now()
-                 cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
-                                                         .get('validity').get('not_valid_after'), '%Y-%m-%d %H:%M:%S')
-                 days_to_expire = cert_expiry_date - current_date
-                 results_dict = {'common_name': cert_common_name, 'vault_cert_path': rootpath,
-                                'cert_issue_date': (cert_info_dict.get('data').get('data').get('validity')
-                                                        .get('not_valid_before')),
-                                'cert_expiry_date': (cert_info_dict.get('data').get('data').get('validity')
-                                                         .get('not_valid_after')),
-                                'issuer': (cert_info_dict.get('data').get('data').get('issuer').get('organizationName')),
-                                'days_to_expire': days_to_expire.days}
-                 searchresults.append(results_dict)
-              elif subjectsearch == cert_info_dict.get('data').get('data').get('subject').get('commonName'):
-                 self.match = 'True'
-                 cert_common_name = cert_info_dict.get('data').get('data').get('subject').get('commonName')
-                 current_date = datetime.now()
-                 cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
-                                                         .get('validity').get('not_valid_after'), '%Y-%m-%d %H:%M:%S')
-                 days_to_expire = cert_expiry_date - current_date
-                 results_dict = {'common_name': cert_common_name, 'vault_cert_path': rootpath,
-                                'cert_issue_date': (cert_info_dict.get('data').get('data').get('validity')
-                                                        .get('not_valid_before')),
-                                'cert_expiry_date': (cert_info_dict.get('data').get('data').get('validity')
-                                                         .get('not_valid_after')),
-                                'issuer': (cert_info_dict.get('data').get('data').get('issuer').get('organizationName')),
-                                'days_to_expire': days_to_expire.days}
-                 searchresults.append(results_dict)
-              else:
-                 pass
+                    cert_info_path = rootpath + "cert_info"
+                    self.connect()
+                    cert_info_dict = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
+                                                                              mount_point=self.mount)
+                    if subjectsearch in cert_info_dict.get('data').get('data').get('subject_alt_names'):
+                        self.match = 'True'
+                        cert_common_name = cert_info_dict.get('data').get('data').get('subject').get('commonName')
+                        current_date = datetime.now()
+                        cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
+                                                             .get('validity').get('not_valid_after'),
+                                                             '%Y-%m-%d %H:%M:%S')
+                        days_to_expire = cert_expiry_date - current_date
+                        results_dict = {'common_name': cert_common_name, 'vault_cert_path': rootpath,
+                                        'cert_issue_date': (cert_info_dict.get('data').get('data').get('validity')
+                                                            .get('not_valid_before')),
+                                        'cert_expiry_date': (cert_info_dict.get('data').get('data').get('validity')
+                                                             .get('not_valid_after')),
+                                        'issuer': (cert_info_dict.get('data').get('data').get('issuer').get(
+                                            'organizationName')),
+                                        'days_to_expire': days_to_expire.days}
+                        searchresults.append(results_dict)
+                    elif subjectsearch == cert_info_dict.get('data').get('data').get('subject').get('commonName'):
+                        self.match = 'True'
+                        cert_common_name = cert_info_dict.get('data').get('data').get('subject').get('commonName')
+                        current_date = datetime.now()
+                        cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
+                                                             .get('validity').get('not_valid_after'),
+                                                             '%Y-%m-%d %H:%M:%S')
+                        days_to_expire = cert_expiry_date - current_date
+                        results_dict = {'common_name': cert_common_name, 'vault_cert_path': rootpath,
+                                        'cert_issue_date': (cert_info_dict.get('data').get('data').get('validity')
+                                                            .get('not_valid_before')),
+                                        'cert_expiry_date': (cert_info_dict.get('data').get('data').get('validity')
+                                                             .get('not_valid_after')),
+                                        'issuer': (cert_info_dict.get('data').get('data').get('issuer').get(
+                                            'organizationName')),
+                                        'days_to_expire': days_to_expire.days}
+                        searchresults.append(results_dict)
+                    else:
+                        pass
         except requests.exceptions.ConnectionError as ve:
             logger.error(f'Failed to connect to {self.__url}: {ve}')
             sys.exit(2)
@@ -360,9 +366,9 @@ class VaultClient:
             :param rootpath: Beginning search path
             :type rootpath: str
             :param rootkey: Used to get commonname from search path
-            :type str:
+            :type rootkey: str
             :param searchresults: Stores the search results..default is empty
-            :type list:
+            :type searchresults: list
             :return: list
         """
         try:
@@ -472,7 +478,7 @@ class VaultStoreEngine(StoreEngine):
                           'cert_info': certinfo['data']['data']}
 
         except Exception as vex:
-            logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')
+            logger.error(f'Failed to read StoreObject /{self.__client.mount}{path}/{name} {vex}')
             sys.exit(2)
         else:
             logger.info(f' Successfully read {cert.path_name}')
@@ -488,10 +494,11 @@ class VaultStoreEngine(StoreEngine):
             :return: list
         """
         if validators.domain(pattern):
-           searchpath = '/'.join(reversed(pattern.strip('/*').split('.'))) + "/"
-           return self.__client.search(rootpath=searchpath, rootkey="", searchresults=[])
+            searchpath = '/'.join(reversed(pattern.strip('/*').split('.'))) + "/"
+            return self.__client.search(rootpath=searchpath, rootkey="", searchresults=[])
         else:
-           return self.__client.search(rootpath=self._settings.VAULT_CLIENT_CERTPATH+"/", rootkey="", searchresults=[])
+            return self.__client.search(rootpath=self._settings.VAULT_CLIENT_CERTPATH + "/", rootkey="",
+                                        searchresults=[])
 
     def subjectaltfind(self, pattern) -> list:
         """Search certificate info based on subject alternative names
@@ -502,10 +509,9 @@ class VaultStoreEngine(StoreEngine):
             :return: list
         """
         if validators.domain(pattern):
-           searchpath = "/"+pattern.split('.')[-1]+"/"
-           return self.__client.subjectaltsearch(rootpath=searchpath, rootkey="", searchresults=[],subjectsearch=pattern)
+            searchpath = "/" + pattern.split('.')[-1] + "/"
+            return self.__client.subjectaltsearch(rootpath=searchpath, rootkey="", searchresults=[],
+                                                  subjectsearch=pattern)
         else:
-           return self.__client.subjectaltsearch(rootpath=self._settings.VAULT_CLIENT_CERTPATH+"/", rootkey="", searchresults=[],subjectsearch=pattern)
-
-
-
+            return self.__client.subjectaltsearch(rootpath=self._settings.VAULT_CLIENT_CERTPATH + "/", rootkey="",
+                                                  searchresults=[], subjectsearch=pattern)

@@ -124,7 +124,7 @@ def cert_get(ctx, name):
     knox = Knox(ctx)
     certificate = Cert(knox.settings, common_name=name)
     certificate.type = ctx.obj['CERT_TYPE']
-    certificate = knox.store.get(certificate.store_path(), name=name, type=certificate.type)
+    certificate = knox.store.get(certificate.path, name=name, type=certificate.type)
     with open(certificate.name+"-pub.pem", "w") as pubf:
         pubf.write(certificate.body['public'])
     with open(certificate.name+"-key.pem", "w") as keyf:
@@ -188,8 +188,8 @@ def store(ctx) -> dict:
               default='JSON',
               show_default=True,
               help="Type of output")
-@click.argument("name",required=False)
-@click.option("--subject-search",required=False,help="Subject alternativename search")
+@click.argument("name", required=False)
+@click.option("--subject-search", required=False, help="Subject alternativename search")
 @click.pass_context
 @logger.catch()
 def find(ctx, name, subject_search, file: str = 'stdout', output: str = 'JSON') -> dict:
@@ -200,12 +200,12 @@ def find(ctx, name, subject_search, file: str = 'stdout', output: str = 'JSON') 
     Supports wild cards. *.example.com
 
     """
-    if (( subject_search and subject_search != "None" ) and ( name and name != "None" )):
-       sys.exit("Pass only 1 arugument i.e either --subject-search or name\n\tknox store find --subject-search <domain>\n\t\tor\n\tknox store find <domain>")
+    if (subject_search and subject_search != "None") and (name and name != "None"):
+        sys.exit("Use subject or name, not both")
     elif subject_search and subject_search != "None":
-       ctx.obj['STORE_FIND_NAME'] = subject_search
+        ctx.obj['STORE_FIND_NAME'] = subject_search
     else:
-       ctx.obj['STORE_FIND_NAME'] = name
+        ctx.obj['STORE_FIND_NAME'] = name
     ctx.obj['STORE_FIND_OUTPUT'] = output
     ctx.obj['STORE_FIND_OUTFILE'] = file
     knox = Knox(ctx)
@@ -227,9 +227,9 @@ def find(ctx, name, subject_search, file: str = 'stdout', output: str = 'JSON') 
         handle.close()
     else:
         results = knox.store.subjectaltfind(pattern=subject_search)  # noqa F841
-        if len(results)==0:
-           logger.info("I didnt find any domain that has subject alternative name with : "+subject_search )
-           sys.exit()
+        if len(results) == 0:
+            logger.info("I didnt find any domain that has subject alternative name with : "+subject_search)
+            sys.exit()
         handle = open(file, 'w') if file else sys.stdout
         if output == 'JSON':
             handle.write(json.dumps(results, indent=4))
