@@ -250,6 +250,60 @@ And Or use a settings file::
       }
     }
 
+
+Generate some test self signed certificates::
+
+    # create a config file for openssl
+    [req]
+    distinguished_name = req_distinguished_name
+    x509_extensions = v3_req
+    prompt = no
+    [req_distinguished_name]
+    C = US
+    ST = VA
+    L = SomeCity
+    O = MyCompany
+    OU = MyDivision
+    CN = www.company.com
+    [v3_req]
+    keyUsage = keyEncipherment, dataEncipherment
+    extendedKeyUsage = serverAuth
+    subjectAltName = @alt_names
+    [alt_names]
+    DNS.1 = www.company.net
+    DNS.2 = company.com
+    DNS.3 = company.net
+
+    openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 \
+     -keyout cert-key.pem \
+     -out cert-pub.pem \
+     -config san.cnf -extensions 'v3_req'
+
+    xtensions 'v3_req'
+    Generating a 2048 bit RSA private key
+    ..................................+++
+    ...........+++
+    writing new private key to 'cert-key.pem'
+    -----
+
+Save a certificate to vault::
+
+    export VAULT_ADDR=http://localhost:8200
+    export KNOX_VAULT_URL=http://localhost:8200
+    export KNOX_VAULT_TOKEN=knox
+    export KNOX_VAULT_APPROLE=$(vault read -format=json auth/approle/role/knox-admin/role-id | jq -r '.data.role_id')
+    export KNOX_VAULT_SECRET_ID=$(vault write -f -format=json auth/approle/role/knox-admin/secret-id | jq -r '.data.secret_id')
+
+    knox cert --pub cert-pub.pem --key cert-key.pem save www.company.com
+
+
+Search for stored certificates::
+
+    knox store find \*              # list all the certificates info
+    knox store find www.company.com
+    knox store find *.example.com   # list all the *.example.com certificates
+    knox store find com/example/www # list about www.example.com
+
 Don't want to install python, I got you::
 
     docker run --net=host 8x8cloud/knox --help
@@ -271,7 +325,7 @@ Don't want to install python, I got you::
       cert   Certificate utilities.
       store  Store commands.
 
-Mount a local volume to access certs::
+If using docker mount a volume to get to your certs::
 
     docker run --net=host \
     -v ~/dev/knox/examples/:/examples \
@@ -279,10 +333,3 @@ Mount a local volume to access certs::
     --pub /examples/sample_cert1.pem \
     --key /examples/sample_key1.pem \
     save www.example.com
-
-Search for stored certificates::
-
-    knox store find *               # list all the certificates info
-    knox store find *.example.com   # list all the *.example.com certificates
-    knox store find com/example/www # list about www.example.com
-
