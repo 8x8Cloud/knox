@@ -55,12 +55,19 @@ class VaultClient:
         self.__settings = settings
 
     def initialize(self) -> bool:
+        """During initialization, if in admin mode, ensure the kv mount point has been registered with Vault. To enable
+        admin mode use the hidden param --admin with any command.
+
+        knox --admin store find
+        """
         if self.__settings.CTX.obj['ADMIN_MODE']:
             return self.new_mount(mount=self.mount)
         else:
             return self.connect()
 
     def connect(self) -> bool:
+        """Knox uses an approle scheme to authenticate with Vault. This requires fetching a fresh, short lived, API
+        token for every call to the API."""
         try:
             logger.trace(f'Connecting to Vault approle: {self.__approle} secret_id: {self.__secretid}')
             resp = self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=True)
@@ -76,6 +83,7 @@ class VaultClient:
         else:
             return True
 
+    @property
     def url(self) -> str:
         return self.__url
 
@@ -100,7 +108,7 @@ class VaultClient:
         try:
             """Connect refreshes the temp Vault auth token"""
             self.connect()
-            response = requests.get(self.__url+path, headers=self.__headers)
+            response = requests.get(url=f'{self.__url}{path}', headers=self.__headers)
             response.raise_for_status()
 
             return json.loads(response.content.decode('utf-8'))
@@ -126,7 +134,7 @@ class VaultClient:
         try:
             """Connect refreshes the temp Vault auth token"""
             self.connect()
-            response = requests.post(self.__url+path, headers=self.__headers, data=data)
+            response = requests.post(url=f'{self.__url}{path}', headers=self.__headers, data=data)
             response.raise_for_status()
 
             return json.loads(response.content.decode('utf-8'))
@@ -152,7 +160,7 @@ class VaultClient:
         try:
             """Connect refreshes the temp Vault auth token"""
             self.connect()
-            response = requests.put(self.__url+path, headers=self.__headers, data=data)
+            response = requests.put(url=f'{self.__url}{path}', headers=self.__headers, data=data)
             response.raise_for_status()
 
             return response
@@ -183,13 +191,20 @@ class VaultClient:
         """
         self.__mounts = self._get("/v1/sys/mounts")
         logger.trace(f'{self.__class__}::new_mount {self.__mounts}')
-        if self.__mounts and mount+"/" not in self.__mounts['data'].keys():
+        if self.__mounts and f'{mount}/' not in self.__mounts['data'].keys():
             logger.info(f'Vault mount {self.__url}/v1/sys/mounts/{mount} does not exist, creating')
             self._put(f'/v1/sys/mounts/{mount}', '{"type": "kv-v2"}')
             self.__mounts = self._get("/v1/sys/mounts")
         return bool(self.__mounts)
 
     def upsert(self, obj: StoreObject) -> bool:
+        """Given a StoreObject create or update it into Vault. Metadata and content are stored separately to allow
+        querying of non sensitive details.
+
+            :param obj: The object to store
+            :type obj: StoreObject
+            :return: Boolean
+        """
         client = self.__vault_client
         mp = self.mount
         policyname = ""
@@ -244,7 +259,18 @@ class VaultClient:
             logger.info(f'Successfully stored {obj.path_name} and {policyname}')
             return True
 
-    def read(self, path: str, name: str, type=None) -> tuple:
+    def read(self, path: str, name: str, type: str = None) -> tuple:
+        """Given a path and name retrieve a tuple of dictionaries to create a StoreObject
+            cert_body
+            cert_info
+
+            :param path: The path where the StoreObjects data is stored
+            :type path: str
+            :param name: Name of the StoreObject to retrieve
+            :type name: str
+            :param type: The type of StoreObject i.e. PEM
+            :type type: str
+        """
         client = self.__vault_client
         if type:
             fullpathbody = f'{path}/{name}/{type}/cert_body'
@@ -348,17 +374,18 @@ class VaultStoreEngine(StoreEngine):
         super().__init__()
         self._settings = settings
         self.__client = VaultClient(settings)
-        logger.debug(f'🔐 Vault backend configuration loaded. {self.__client.url()}')
+        logger.debug(f'🔐 Vault backend configuration loaded. {self.__client.url}')
         if self.initialize():
             logger.debug("🔐 Vault backend initialized.")
         else:
-            logger.error(f'🛑 Failed to connect to Vault {self.__client.url()}')
+            logger.error(f'🛑 Failed to connect to Vault {self.__client.url}')
 
     def initialize(self) -> bool:
+        """Ensure the Vault client is initialized"""
         return self.__client.initialize()
 
     def open(self) -> bool:
-        """Ensure the vault client is connected"""
+        """Ensure the Vault client is connected"""
         return self.__client.connect()
 
     def close(self) -> bool:
@@ -410,7 +437,7 @@ class VaultStoreEngine(StoreEngine):
         """Search certificate info for a given search pattern
 
             :param pattern: Search glob pattern
-                ex: abc.8x8.com, abc.8x8.com/*, 8x8.com/*
+                ex: *, abc.8x8.com, abc.8x8.com/*, 8x8.com/*
             :type pattern: str
 
             :return: list
@@ -423,19 +450,3 @@ class VaultStoreEngine(StoreEngine):
             searchpath = f"client/{pattern}"
 
         return self.__client.search(rootpath=searchpath, rootkey="", pattern=pattern, searchresults=[])
-
-    def subjectaltfind(self, pattern) -> list:
-        """Search certificate info based on subject alternative names
-
-            :param pattern: Search glob pattern
-            :type pattern: str
-
-            :return: list
-        """
-        if validators.domain(pattern):
-            searchpath = "/" + pattern.split('.')[-1] + "/"
-            return self.__client.subjectaltsearch(rootpath=searchpath, rootkey="", searchresults=[],
-                                                  subjectsearch=pattern)
-        else:
-            return self.__client.subjectaltsearch(rootpath=self._settings.VAULT_CLIENT_CERTPATH + "/", rootkey="",
-                                                  searchresults=[], subjectsearch=pattern)

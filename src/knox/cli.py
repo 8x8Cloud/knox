@@ -125,11 +125,11 @@ def cert_get(ctx, name):
     certificate = Cert(knox.settings, common_name=name)
     certificate.type = ctx.obj['CERT_TYPE']
     certificate = knox.store.get(certificate.path, name=name, type=certificate.type)
-    with open(certificate.name+"-pub.pem", "w") as pubf:
+    with open(f'{certificate.name}-pub.pem', "w") as pubf:
         pubf.write(certificate.body['public'])
-    with open(certificate.name+"-key.pem", "w") as keyf:
+    with open(f'{certificate.name}-key.pem', "w") as keyf:
         keyf.write(certificate.body['private'])
-    with open(certificate.name+"-chain.pem", "w") as chainf:
+    with open(f'{certificate.name}-chain.pem', "w") as chainf:
         chainf.write(certificate.body['chain'])
 
 

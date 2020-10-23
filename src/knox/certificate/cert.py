@@ -226,7 +226,7 @@ class Cert(StoreObject):
             :return: str
         """
         domainsplit = common_name.split('.')
-        return "/"+"/".join(reversed(domainsplit))
+        return "/" + "/".join(reversed(domainsplit))
 
     @property
     def name(self) -> str:
