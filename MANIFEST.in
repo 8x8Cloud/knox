@@ -26,7 +26,7 @@ recursive-include src *.py
 include *.md
 
 # added by check_manifest.py
-recursive-include examples *.pem
+recursive-include examples *.pem *.cnf
 
 # added by check_manifest.py
 include *.txt
