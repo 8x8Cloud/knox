@@ -99,9 +99,13 @@ class Cert(StoreObject):
         self.public = self._file
 
         """Match the objects common name to the true common name from the certificate and
-        swap out '*' astrix for the keyword wildcard
+        swap out '*' astrix for the keyword wildcard.
+        If the certificate does not have a common name then use the user provided name
         """
-        self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
+        if len(self._data['cert_info']['subject']['commonName']) > 0:
+            self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
+        else:
+            logger.warning(f'Certificate {self.name} does not have a value for common name.')
 
     @property
     def mount(self) -> str:
@@ -162,7 +166,7 @@ class Cert(StoreObject):
             ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
             return json.dumps(f'{ext.value.get_values_for_type(x509.DNSName)}')
         except Exception as ex:  # noqa E722
-            return json.dumps(" ")
+            return ''
 
     @property
     def type(self) -> str:
