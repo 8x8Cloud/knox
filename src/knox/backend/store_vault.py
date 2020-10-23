@@ -330,8 +330,18 @@ class VaultClient:
                     self.connect()
                     cert_info = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
                                                                          mount_point=self.mount)['data']['data']
-                    subjectfields = cert_info['subject']['commonName'] + \
-                                    cert_info['subject']['alternativeNames']
+                    subjectfields = []
+
+                    if 'subject' in cert_info:
+                        if 'commonName' in cert_info['subject']:
+                            subjectfields = cert_info['subject']['commonName']
+
+                        if 'alternativeNames' in cert_info['subject']:
+                            subjectfields += cert_info['subject']['alternativeNames']
+                    else:
+                        logger.warning(f'{rootpath} has an empty cert_info')
+                        return searchresults
+
                     logger.trace(f'does {pattern} match {subjectfields}')
                     if pattern == "*" or pattern in subjectfields:
                         logger.trace(f'yes, {pattern} matches {subjectfields}')
@@ -343,9 +353,13 @@ class VaultClient:
                                         'vault_cert_path': rootpath,
                                         'cert_issue_date': cert_info['validity']['not_valid_before'],
                                         'cert_expiry_date': cert_info['validity']['not_valid_after'],
-                                        'issuer': cert_info['issuer']['commonName'],
                                         'days_to_expire': days_to_expire.days
                                         }
+                        if 'commonName' in cert_info['issuer']:
+                            results_dict['issuer'] = cert_info['issuer']['commonName']
+                        else:
+                            results_dict['issuer'] = ""
+
                         searchresults.append(results_dict)
                     else:
                         logger.trace(f'no, {pattern} not found in {subjectfields}')
