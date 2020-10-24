@@ -20,6 +20,7 @@ from datetime import datetime
 
 import hvac
 import requests
+import validators
 from dynaconf import LazySettings
 from loguru import logger
 
@@ -205,30 +206,40 @@ class VaultClient:
             :return: Boolean
         """
         client = self.__vault_client
-        mp = self.mount
+        if validators.domain(obj.name):
+            mp = self.mount
+            op = obj.path_name
+        else:
+            mp = f'{self.mount}'
+            op = f'client/{obj.name}/{obj.type}'
+
         policyname = ""
 
         try:
             self.connect()
-            logger.trace(f'updating secret {mp}/{obj.path_name}/cert_body')
-            client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_body",
+            logger.trace(f'updating secret {mp}/{op}/cert_body')
+            client.secrets.kv.v2.create_or_update_secret(path=f'{op}/cert_body',
                                                          mount_point=mp,
                                                          secret=obj.data['cert_body'])
 
             self.connect()
-            logger.trace(f'updating secret {mp}/{obj.path_name}/cert_info')
-            client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
+            logger.trace(f'updating secret {mp}/{op}/cert_info')
+            client.secrets.kv.v2.create_or_update_secret(path=f'{op}/cert_info',
                                                          mount_point=mp,
                                                          secret=obj.data['cert_info'])
             self.connect()
             list_policies_resp = client.sys.list_policies()['data']['policies']
-            commonname = obj.data['cert_info']['subject']['commonName']
+            if 'commonName' in obj.data['cert_info']['subject']:
+                commonname = obj.data['cert_info']['subject']['commonName']
+            else:
+                commonname = obj.name
+
             policyname = f'knox-read-{commonname}'
             if policyname in list_policies_resp:
                 pass
             else:
                 policy = obj.data['cert_policy']
-                logger.debug(f'Creating explict read access policy {policyname} for {mp}{obj.path_name}/cert_body')
+                logger.debug(f'Creating explict read access policy {policyname} for {op}/cert_body')
                 logger.trace(f'{self.__class__}::upsert {policyname}:\n{policy}')
                 self.connect()
                 client.sys.create_or_update_policy(name=policyname, policy=policy)
@@ -237,25 +248,25 @@ class VaultClient:
             policyphrase = ""
             if len(policyname) > 0:
                 policyphrase = f'and or {policyname}'
-            logger.error(f'Permission denied writing {obj.path_name} {policyphrase}: {ve}')
+            logger.error(f'Permission denied writing {op} {policyphrase}: {ve}')
             sys.exit(2)
         except hvac.exceptions.InvalidPath as ve:
             policyphrase = ""
             if len(policyname) > 0:
                 policyphrase = f'and or {policyname}'
-            logger.error(f'Path invalid for {obj.path_name} {policyphrase}: {ve}')
+            logger.error(f'Path invalid for {op} {policyphrase}: {ve}')
             sys.exit(2)
         except hvac.exceptions.Unauthorized as ve:
             policyphrase = ""
             if len(policyname) > 0:
                 policyphrase = f'and or {policyname}'
-            logger.error(f'Credentials not authorized to write {obj.path_name} {policyphrase}: {ve}')
+            logger.error(f'Credentials not authorized to write {op} {policyphrase}: {ve}')
             sys.exit(2)
         except Exception as vex:
             logger.error(f'Failed to write StoreObject to Vault {vex}')
             sys.exit(2)
         else:
-            logger.info(f'Successfully stored {obj.path_name} and {policyname}')
+            logger.info(f'Successfully stored {op} and {policyname}')
             return True
 
     def read(self, path: str, name: str, type: str = None) -> tuple:

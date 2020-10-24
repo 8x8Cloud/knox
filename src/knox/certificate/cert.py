@@ -39,17 +39,17 @@ from .cert_engine import CertDnsEngine
 
 class Cert(StoreObject):
     """Object representation of a TLS certificate"""
-    _body: str  #: String representation of private, chain and public portions of certificate as a map/json
-    _info: str  #: Certificate details
-    _data: {}   #: Combined body and info map
-    _path: str
-    _policy: str
-    _mount: str
-    _file: object
-    _x509: x509
-    _common_name: str
-    _type: str  #: Certificate type identifier
-    _jinja: Environment
+    _body: str           #: String representation of private, chain and public portions of certificate as a map/json
+    _info: str           #: Certificate details
+    _data: {}            #: Combined body and info map
+    _path: str           #: Objects stored using <mount><path><name><type>
+    _policy: str         #: Vault access policy, gen from jinja template, explicit to instance of cert
+    _mount: str          #: Based on certificate its mount is either KNOX_VAULT_MOUNT or KNOX_VAULT_MOUNT/client
+    _file: object        #: Raw file contents of certificate
+    _x509: x509          #: Parsed data object from raw file
+    _common_name: str    #: Defaults to value from certificate
+    _type: str           #: Certificate type identifier
+    _jinja: Environment  #: Template engine
 
     class CertTypes(enum.Enum):
         PEM = 1
@@ -102,18 +102,11 @@ class Cert(StoreObject):
         swap out '*' astrix for the keyword wildcard.
         If the certificate does not have a common name then use the user provided name
         """
-        if len(self._data['cert_info']['subject']['commonName']) > 0:
+        if 'commonName' in self._data['cert_info']['subject'] \
+                and len(self._data['cert_info']['subject']['commonName']) > 0:
             self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
         else:
             logger.warning(f'Certificate {self.name} does not have a value for common name.')
-
-    @property
-    def mount(self) -> str:
-        if validators.domain(self._common_name):
-            self._mount = self._settings['KNOX_VAULT_MOUNT']
-        else:
-            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/client"
-        return self._mount
 
     def policy(self) -> str:
         self._policy = self._tmpl_policy.render(cert=self)
@@ -144,6 +137,9 @@ class Cert(StoreObject):
         self._data['cert_body'] = self._body['cert_body']
         self._data['cert_policy'] = self.policy()
 
+        if not validators.domain(self.name):
+            logger.info(f'{self.name} appears to be a client/server certificate not a web/https certificate')
+
     @classmethod
     def valid_name(cls, value: str) -> str:
         """Some engines might have problems with astrix, as they are used for glob searching and or RBAC.
@@ -152,6 +148,22 @@ class Cert(StoreObject):
             return value.replace('*', 'wildcard')
         else:
             return value
+
+    @property
+    def mount(self) -> str:
+        if validators.domain(self._common_name):
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/"
+        else:
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/client"
+        return self._mount
+
+    @property
+    def policy_mount(self) -> str:
+        if validators.domain(self._common_name):
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/data"
+        else:
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/data/client"
+        return self._mount
 
     def subject(self) -> str:
         """Return the certificate subject details"""
@@ -238,7 +250,7 @@ class Cert(StoreObject):
         if validators.domain(self.name):
             self._path = Cert.to_store_path(self.name)
         else:
-            self._path = self.name
+            self._path = ''
         return self._path
 
     def __str__(self) -> str:
