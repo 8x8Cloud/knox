@@ -20,7 +20,6 @@ from datetime import datetime
 
 import hvac
 import requests
-import validators
 from dynaconf import LazySettings
 from loguru import logger
 
