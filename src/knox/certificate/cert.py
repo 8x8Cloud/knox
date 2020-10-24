@@ -20,6 +20,7 @@ import enum
 import json
 from binascii import hexlify
 
+import validators
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -38,16 +39,17 @@ from .cert_engine import CertDnsEngine
 
 class Cert(StoreObject):
     """Object representation of a TLS certificate"""
-    _body: str  #: String representation of private, chain and public portions of certificate as a map/json
-    _info: str  #: Certificate details
-    _data: {}   #: Combined body and info map
-    _policy: str
-    _mount: str
-    _file: object
-    _x509: x509
-    _common_name: str
-    _type: str  #: Certificate type identifier
-    _jinja: Environment
+    _body: str           #: String representation of private, chain and public portions of certificate as a map/json
+    _info: str           #: Certificate details
+    _data: {}            #: Combined body and info map
+    _path: str           #: Objects stored using <mount><path><name><type>
+    _policy: str         #: Vault access policy, gen from jinja template, explicit to instance of cert
+    _mount: str          #: Based on certificate its mount is either KNOX_VAULT_MOUNT or KNOX_VAULT_MOUNT/client
+    _file: object        #: Raw file contents of certificate
+    _x509: x509          #: Parsed data object from raw file
+    _common_name: str    #: Defaults to value from certificate
+    _type: str           #: Certificate type identifier
+    _jinja: Environment  #: Template engine
 
     class CertTypes(enum.Enum):
         PEM = 1
@@ -66,11 +68,10 @@ class Cert(StoreObject):
         """Constructor for Cert"""
         self._settings = settings
         self._common_name = self.valid_name(common_name)
-        self._mount = self._settings['KNOX_VAULT_MOUNT']
         self._body = ""
         self._info = ""
         self._type = ""
-        super().__init__(name=self._common_name, path=self.store_path(), body=self._body, info=self._info)
+        super().__init__(name=self.name, path=self.path, body=self._body, info=self._info)
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_body = self._jinja.get_template('body_template.js')
         self._tmpl_info = self._jinja.get_template('info_template.js')
@@ -98,17 +99,14 @@ class Cert(StoreObject):
         self.public = self._file
 
         """Match the objects common name to the true common name from the certificate and
-        swap out '*' astrix for the keyword wildcard
+        swap out '*' astrix for the keyword wildcard.
+        If the certificate does not have a common name then use the user provided name
         """
-        self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
-        self.name = self.valid_name(self._common_name)
-
-        """Ensure path is the inverse of the true cert common name"""
-        self.path = self.store_path()
-
-    @property
-    def mount(self) -> str:
-        return self._mount
+        if 'commonName' in self._data['cert_info']['subject'] \
+                and len(self._data['cert_info']['subject']['commonName']) > 0:
+            self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
+        else:
+            logger.warning(f'Certificate {self.name} does not have a value for common name.')
 
     def policy(self) -> str:
         self._policy = self._tmpl_policy.render(cert=self)
@@ -139,15 +137,48 @@ class Cert(StoreObject):
         self._data['cert_body'] = self._body['cert_body']
         self._data['cert_policy'] = self.policy()
 
+        if not validators.domain(self.name):
+            logger.info(f'{self.name} appears to be a client/server certificate not a web/https certificate')
+
     @classmethod
     def valid_name(cls, value: str) -> str:
         """Some engines might have problems with astrix, as they are used for glob searching and or RBAC.
         Replace it with the key word 'wildcard'. This does not affect the actual certificate."""
-        return value.replace('*', 'wildcard')
+        if validators.domain(value):
+            return value.replace('*', 'wildcard')
+        else:
+            return value
+
+    @property
+    def mount(self) -> str:
+        if validators.domain(self._common_name):
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/"
+        else:
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/client"
+        return self._mount
+
+    @property
+    def policy_mount(self) -> str:
+        if validators.domain(self._common_name):
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/data"
+        else:
+            self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/data/client"
+        return self._mount
 
     def subject(self) -> str:
         """Return the certificate subject details"""
-        return json.dumps({attr.oid._name: attr.value for attr in self._x509.subject}, indent=8)
+        subj = {attr.oid._name: attr.value for attr in self._x509.subject}
+        subj['alternativeNames'] = self.subjectaltnames()
+        return json.dumps(subj, indent=8)
+
+    def subjectaltnames(self) -> str:
+        """Return Subject alternate names"""
+        try:
+            cert = self._x509
+            ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+            return json.dumps(f'{ext.value.get_values_for_type(x509.DNSName)}')
+        except Exception as ex:  # noqa E722
+            return ''
 
     @property
     def type(self) -> str:
@@ -207,10 +238,20 @@ class Cert(StoreObject):
             :return: str
         """
         domainsplit = common_name.split('.')
-        return "/"+"/".join(reversed(domainsplit))
+        return "/" + "/".join(reversed(domainsplit))
 
-    def store_path(self) -> str:
-        return self.to_store_path(self._common_name)
+    @property
+    def name(self) -> str:
+        self._name = self.valid_name(self._common_name)
+        return self._name
+
+    @property
+    def path(self) -> str:
+        if validators.domain(self.name):
+            self._path = Cert.to_store_path(self.name)
+        else:
+            self._path = ''
+        return self._path
 
     def __str__(self) -> str:
         return json.dumps(self._data, indent=4)

@@ -20,6 +20,7 @@ from datetime import datetime
 
 import hvac
 import requests
+import validators
 from dynaconf import LazySettings
 from loguru import logger
 
@@ -41,6 +42,8 @@ class VaultClient:
     __mount: str          #: Engine mount path
     __mounts: json        #: Map of Vault mounts
 
+    match = 'False'
+
     def __init__(self, settings: LazySettings) -> None:
         """Constructor for VaultClient"""
         self.__url = settings.VAULT_URL
@@ -52,12 +55,19 @@ class VaultClient:
         self.__settings = settings
 
     def initialize(self) -> bool:
+        """During initialization, if in admin mode, ensure the kv mount point has been registered with Vault. To enable
+        admin mode use the hidden param --admin with any command.
+
+        knox --admin store find
+        """
         if self.__settings.CTX.obj['ADMIN_MODE']:
             return self.new_mount(mount=self.mount)
         else:
             return self.connect()
 
     def connect(self) -> bool:
+        """Knox uses an approle scheme to authenticate with Vault. This requires fetching a fresh, short lived, API
+        token for every call to the API."""
         try:
             logger.trace(f'Connecting to Vault approle: {self.__approle} secret_id: {self.__secretid}')
             resp = self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=True)
@@ -73,6 +83,7 @@ class VaultClient:
         else:
             return True
 
+    @property
     def url(self) -> str:
         return self.__url
 
@@ -97,7 +108,7 @@ class VaultClient:
         try:
             """Connect refreshes the temp Vault auth token"""
             self.connect()
-            response = requests.get(self.__url+path, headers=self.__headers)
+            response = requests.get(url=f'{self.__url}{path}', headers=self.__headers)
             response.raise_for_status()
 
             return json.loads(response.content.decode('utf-8'))
@@ -123,7 +134,7 @@ class VaultClient:
         try:
             """Connect refreshes the temp Vault auth token"""
             self.connect()
-            response = requests.post(self.__url+path, headers=self.__headers, data=data)
+            response = requests.post(url=f'{self.__url}{path}', headers=self.__headers, data=data)
             response.raise_for_status()
 
             return json.loads(response.content.decode('utf-8'))
@@ -149,7 +160,7 @@ class VaultClient:
         try:
             """Connect refreshes the temp Vault auth token"""
             self.connect()
-            response = requests.put(self.__url+path, headers=self.__headers, data=data)
+            response = requests.put(url=f'{self.__url}{path}', headers=self.__headers, data=data)
             response.raise_for_status()
 
             return response
@@ -180,38 +191,55 @@ class VaultClient:
         """
         self.__mounts = self._get("/v1/sys/mounts")
         logger.trace(f'{self.__class__}::new_mount {self.__mounts}')
-        if self.__mounts and mount+"/" not in self.__mounts['data'].keys():
+        if self.__mounts and f'{mount}/' not in self.__mounts['data'].keys():
             logger.info(f'Vault mount {self.__url}/v1/sys/mounts/{mount} does not exist, creating')
             self._put(f'/v1/sys/mounts/{mount}', '{"type": "kv-v2"}')
             self.__mounts = self._get("/v1/sys/mounts")
         return bool(self.__mounts)
 
     def upsert(self, obj: StoreObject) -> bool:
+        """Given a StoreObject create or update it into Vault. Metadata and content are stored separately to allow
+        querying of non sensitive details.
+
+            :param obj: The object to store
+            :type obj: StoreObject
+            :return: Boolean
+        """
         client = self.__vault_client
-        mp = self.mount
+        if validators.domain(obj.name):
+            mp = self.mount
+            op = obj.path_name
+        else:
+            mp = f'{self.mount}'
+            op = f'client/{obj.name}/{obj.type}'
+
         policyname = ""
 
         try:
             self.connect()
-            logger.trace(f'updating secret {mp}/{obj.path_name}/cert_body')
-            client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_body",
+            logger.trace(f'updating secret {mp}/{op}/cert_body')
+            client.secrets.kv.v2.create_or_update_secret(path=f'{op}/cert_body',
                                                          mount_point=mp,
                                                          secret=obj.data['cert_body'])
 
             self.connect()
-            logger.trace(f'updating secret {mp}/{obj.path_name}/cert_info')
-            client.secrets.kv.v2.create_or_update_secret(path=obj.path_name + "/cert_info",
+            logger.trace(f'updating secret {mp}/{op}/cert_info')
+            client.secrets.kv.v2.create_or_update_secret(path=f'{op}/cert_info',
                                                          mount_point=mp,
                                                          secret=obj.data['cert_info'])
             self.connect()
             list_policies_resp = client.sys.list_policies()['data']['policies']
-            commonname = obj.data['cert_info']['subject']['commonName']
+            if 'commonName' in obj.data['cert_info']['subject']:
+                commonname = obj.data['cert_info']['subject']['commonName']
+            else:
+                commonname = obj.name
+
             policyname = f'knox-read-{commonname}'
             if policyname in list_policies_resp:
                 pass
             else:
                 policy = obj.data['cert_policy']
-                logger.debug(f'Creating explict read access policy {policyname} for {mp}{obj.path_name}/cert_body')
+                logger.debug(f'Creating explict read access policy {policyname} for {op}/cert_body')
                 logger.trace(f'{self.__class__}::upsert {policyname}:\n{policy}')
                 self.connect()
                 client.sys.create_or_update_policy(name=policyname, policy=policy)
@@ -220,28 +248,39 @@ class VaultClient:
             policyphrase = ""
             if len(policyname) > 0:
                 policyphrase = f'and or {policyname}'
-            logger.error(f'Permission denied writing {obj.path_name} {policyphrase}: {ve}')
+            logger.error(f'Permission denied writing {op} {policyphrase}: {ve}')
             sys.exit(2)
         except hvac.exceptions.InvalidPath as ve:
             policyphrase = ""
             if len(policyname) > 0:
                 policyphrase = f'and or {policyname}'
-            logger.error(f'Path invalid for {obj.path_name} {policyphrase}: {ve}')
+            logger.error(f'Path invalid for {op} {policyphrase}: {ve}')
             sys.exit(2)
         except hvac.exceptions.Unauthorized as ve:
             policyphrase = ""
             if len(policyname) > 0:
                 policyphrase = f'and or {policyname}'
-            logger.error(f'Credentials not authorized to write {obj.path_name} {policyphrase}: {ve}')
+            logger.error(f'Credentials not authorized to write {op} {policyphrase}: {ve}')
             sys.exit(2)
         except Exception as vex:
             logger.error(f'Failed to write StoreObject to Vault {vex}')
             sys.exit(2)
         else:
-            logger.info(f'Successfully stored {obj.path_name} and {policyname}')
+            logger.info(f'Successfully stored {op} and {policyname}')
             return True
 
-    def read(self, path: str, name: str, type=None) -> tuple:
+    def read(self, path: str, name: str, type: str = None) -> tuple:
+        """Given a path and name retrieve a tuple of dictionaries to create a StoreObject
+            cert_body
+            cert_info
+
+            :param path: The path where the StoreObjects data is stored
+            :type path: str
+            :param name: Name of the StoreObject to retrieve
+            :type name: str
+            :param type: The type of StoreObject i.e. PEM
+            :type type: str
+        """
         client = self.__vault_client
         if type:
             fullpathbody = f'{path}/{name}/{type}/cert_body'
@@ -270,47 +309,65 @@ class VaultClient:
             logger.error(f'Credentials not authorized to read {path}/{name}: {ve}')
             sys.exit(2)
 
-    def search(self, rootpath: str, rootkey: str, searchresults: list) -> list:
+    def search(self, rootpath: str, rootkey: str, searchresults: list, pattern: str = None) -> list:
         """Search for 'cert_info' for a given vault path
 
             :param rootpath: Beginning search path
             :type rootpath: str
             :param rootkey: Used to get commonname from search path
-            :type str:
+            :type rootkey: str
             :param searchresults: Stores the search results..default is empty
-            :type list:
+            :type searchresults: list
+            :param pattern: Unaltered search pattern
+            :type pattern: str
             :return: list
         """
         try:
             client = self.__vault_client
             self.connect()
             rootpath = rootpath.replace('//', '/')
-            path = rootpath
-            logger.trace(f'Searching {path}')
-            secrets = client.secrets.kv.list_secrets(path=path, mount_point=self.mount)
+            logger.trace(f'Searching {rootpath}')
+            secrets = client.secrets.kv.list_secrets(path=rootpath, mount_point=self.mount)
             secrets_keys = secrets.get('data').get('keys')
             if isinstance(secrets_keys, list):
                 if 'cert_info' not in secrets_keys:
                     for key in secrets_keys:
                         subpaths = rootpath + key
-                        self.search(rootpath=subpaths, rootkey=key, searchresults=searchresults)
+                        self.search(rootpath=subpaths, rootkey=key, pattern=pattern, searchresults=searchresults)
                 else:
                     cert_info_path = rootpath + "cert_info"
                     cert_common_name = rootpath.split('/')[-3]
                     self.connect()
-                    cert_info_dict = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
-                                                                              mount_point=self.mount)
-                    current_date = datetime.now()
-                    cert_expiry_date = datetime.strptime(cert_info_dict.get('data').get('data')
-                                                         .get('validity').get('not_valid_after'), '%Y-%m-%d %H:%M:%S')
-                    days_to_expire = cert_expiry_date - current_date
-                    results_dict = {'common_name': cert_common_name, 'vault_cert_path': rootpath,
-                                    'cert_issue_date': (cert_info_dict.get('data').get('data').get('validity')
-                                                        .get('not_valid_before')),
-                                    'cert_expiry_date': (cert_info_dict.get('data').get('data').get('validity')
-                                                         .get('not_valid_after')),
-                                    'days_to_expire': days_to_expire.days}
-                    searchresults.append(results_dict)
+                    cert_info = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
+                                                                         mount_point=self.mount)['data']['data']
+                    cert_info_str = json.dumps(cert_info)
+
+                    logger.trace(f'does {pattern} match {cert_info_str}')
+                    if len(cert_info.keys()) > 0 and (pattern == "*" or cert_info_str.find(pattern) > 0):
+                        logger.trace(f'yes, {pattern} matches {cert_info_str}')
+                        current_date = datetime.now()
+                        cert_expiry_date = datetime.strptime(cert_info['validity']['not_valid_after'],
+                                                             '%Y-%m-%d %H:%M:%S')
+                        days_to_expire = cert_expiry_date - current_date
+                        results_dict = {'common_name': cert_common_name,
+                                        'vault_cert_path': f'/{self.mount}{rootpath}',
+                                        'cert_issue_date': cert_info['validity']['not_valid_before'],
+                                        'cert_expiry_date': cert_info['validity']['not_valid_after'],
+                                        'days_to_expire': days_to_expire.days
+                                        }
+                        if 'commonName' in cert_info['issuer']:
+                            results_dict['issuer'] = cert_info['issuer']['commonName']
+                        else:
+                            results_dict['issuer'] = ""
+
+                        if 'alternativeNames' in cert_info['subject']:
+                            results_dict['alternativeNames'] = cert_info['subject']['alternativeNames']
+                        else:
+                            results_dict['alternativeNames'] = ""
+
+                        searchresults.append(results_dict)
+                    else:
+                        logger.trace(f'no, {pattern} not found {cert_info_path}')
         except requests.exceptions.ConnectionError as ve:
             logger.error(f'Failed to connect to {self.__url}: {ve}')
             sys.exit(2)
@@ -336,17 +393,18 @@ class VaultStoreEngine(StoreEngine):
         super().__init__()
         self._settings = settings
         self.__client = VaultClient(settings)
-        logger.debug(f'🔐 Vault backend configuration loaded. {self.__client.url()}')
+        logger.debug(f'🔐 Vault backend configuration loaded. {self.__client.url}')
         if self.initialize():
             logger.debug("🔐 Vault backend initialized.")
         else:
-            logger.error(f'🛑 Failed to connect to Vault {self.__client.url()}')
+            logger.error(f'🛑 Failed to connect to Vault {self.__client.url}')
 
     def initialize(self) -> bool:
+        """Ensure the Vault client is initialized"""
         return self.__client.initialize()
 
     def open(self) -> bool:
-        """Ensure the vault client is connected"""
+        """Ensure the Vault client is connected"""
         return self.__client.connect()
 
     def close(self) -> bool:
@@ -388,7 +446,7 @@ class VaultStoreEngine(StoreEngine):
                           'cert_info': certinfo['data']['data']}
 
         except Exception as vex:
-            logger.error(f'Failed to read StoreObject /{self.__client.mount()}{path}/{name} {vex}')
+            logger.error(f'Failed to read StoreObject /{self.__client.mount}{path}/{name} {vex}')
             sys.exit(2)
         else:
             logger.info(f' Successfully read {cert.path_name}')
@@ -398,10 +456,9 @@ class VaultStoreEngine(StoreEngine):
         """Search certificate info for a given search pattern
 
             :param pattern: Search glob pattern
-                ex: abc.8x8.com, abc.8x8.com/*, 8x8.com/*
+                ex: *, abc.8x8.com, abc.8x8.com/*, 8x8.com/*
             :type pattern: str
 
             :return: list
         """
-        searchpath = '/'.join(reversed(pattern.strip('/*').split('.'))) + "/"
-        return self.__client.search(rootpath=searchpath, rootkey="", searchresults=[])
+        return self.__client.search(rootpath='/', rootkey="", pattern=pattern, searchresults=[])

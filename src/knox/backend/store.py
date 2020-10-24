@@ -71,3 +71,8 @@ class Store:
            Search patterns : abc.8x8.com, abc.8x8.com/*, 8x8.com/*
         """
         return self._engine.find(pattern)
+
+    def subjectaltfind(self, pattern: str) -> list:
+        """Fetch the certificate information based on subject alternative name
+        """
+        return self._engine.subjectaltfind(pattern)

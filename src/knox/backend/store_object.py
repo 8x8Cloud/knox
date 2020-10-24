@@ -20,12 +20,13 @@ import json
 
 class StoreObject:
     """Metadata interface for objects being persisted in a backend"""
-    _name: str  #: Name of the objects store key
-    _path: str  #: Path from store mount point to find store key
-    _body: str  #: Content that will be persisted
-    _info: str  #: Metadata about the object being stored
-    _type: str  #: A way to classify StoreObjects
-    _data: {}   #: Complete map of object
+    _name: str     #: Name of the objects store key
+    _path: str     #: Path from store mount point to find store key
+    _body: str     #: Content that will be persisted
+    _info: str     #: Metadata about the object being stored
+    _type: str     #: A way to classify StoreObjects
+    _data: {}      #: Complete map of object
+    _mount: str    #: Mount point
     _version: int  #: Store revision
 
     def __init__(self, name: str, path: str, body: str, info: str, type=None) -> None:
