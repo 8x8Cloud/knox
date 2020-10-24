@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='knox',
-    version='0.1.9',
+    version='0.1.10',
     license='Apache-2.0',
     description='Certificate management utilities with Vault backend',
     long_description='%s\n%s' % (
@@ -78,7 +78,8 @@ setup(
         'hvac',
         'loguru',
         'dynaconf',
-        'shortuuid'
+        'shortuuid',
+        'validators'
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
     ],
     extras_require={

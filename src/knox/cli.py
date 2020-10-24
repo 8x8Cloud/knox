@@ -124,12 +124,12 @@ def cert_get(ctx, name):
     knox = Knox(ctx)
     certificate = Cert(knox.settings, common_name=name)
     certificate.type = ctx.obj['CERT_TYPE']
-    certificate = knox.store.get(certificate.store_path(), name=name, type=certificate.type)
-    with open(certificate.name+"-pub.pem", "w") as pubf:
+    certificate = knox.store.get(certificate.path, name=name, type=certificate.type)
+    with open(f'{certificate.name}-pub.pem', "w") as pubf:
         pubf.write(certificate.body['public'])
-    with open(certificate.name+"-key.pem", "w") as keyf:
+    with open(f'{certificate.name}-key.pem', "w") as keyf:
         keyf.write(certificate.body['private'])
-    with open(certificate.name+"-chain.pem", "w") as chainf:
+    with open(f'{certificate.name}-chain.pem', "w") as chainf:
         chainf.write(certificate.body['chain'])
 
 
@@ -191,34 +191,38 @@ def store(ctx) -> dict:
 @click.argument("name")
 @click.pass_context
 @logger.catch()
-def store_find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
+def find(ctx, name, file: str = 'stdout', output: str = 'JSON') -> dict:
     """Given a certificate NAME pattern search the store.
 
     NAME can be similar to a full file path or the certificates common name.
     i.e. www.example.com becomes /com/example/www/www.example.com when stored.
     Supports wild cards. *.example.com
 
+    To list all certs you might have to escape astrix i.e.
+
+      knox store find \*
+
+    Otherwise your shell may try and interpret it and not pass it to python
     """
     ctx.obj['STORE_FIND_NAME'] = name
     ctx.obj['STORE_FIND_OUTPUT'] = output
     ctx.obj['STORE_FIND_OUTFILE'] = file
     knox = Knox(ctx)
-    if name:
-        results = knox.store.find(pattern=name)  # noqa F841
-        handle = open(file, 'w') if file else sys.stdout
-        if output == 'JSON':
-            handle.write(json.dumps(results, indent=4))
-        else:
-            csv_writer = csv.writer(handle)
-            count = 0
-            for rec in results:
-                if count == 0:
-                    header = rec.keys()
-                    csv_writer.writerow(header)
-                    count += 1
-                csv_writer.writerow(rec.values())
+    results = knox.store.find(pattern=name)  # noqa F841
+    handle = open(file, 'w') if file else sys.stdout
+    if output == 'JSON':
+        handle.write(json.dumps(results, indent=4))
+    else:
+        csv_writer = csv.writer(handle)
+        count = 0
+        for rec in results:
+            if count == 0:
+                header = rec.keys()
+                csv_writer.writerow(header)
+                count += 1
+            csv_writer.writerow(rec.values())
 
-        handle.close()
+    handle.close()
 
     return ctx
 
