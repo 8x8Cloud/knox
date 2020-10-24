@@ -330,27 +330,17 @@ class VaultClient:
                     self.connect()
                     cert_info = client.secrets.kv.v2.read_secret_version(path=cert_info_path,
                                                                          mount_point=self.mount)['data']['data']
-                    subjectfields = []
+                    cert_info_str = json.dumps(cert_info)
 
-                    if 'subject' in cert_info:
-                        if 'commonName' in cert_info['subject']:
-                            subjectfields = cert_info['subject']['commonName']
-
-                        if 'alternativeNames' in cert_info['subject']:
-                            subjectfields += cert_info['subject']['alternativeNames']
-                    else:
-                        logger.warning(f'{rootpath} has an empty cert_info')
-                        return searchresults
-
-                    logger.trace(f'does {pattern} match {subjectfields}')
-                    if pattern == "*" or pattern in subjectfields:
-                        logger.trace(f'yes, {pattern} matches {subjectfields}')
+                    logger.trace(f'does {pattern} match {cert_info_str}')
+                    if len(cert_info.keys()) > 0 and (pattern == "*" or cert_info_str.find(pattern) > 0):
+                        logger.trace(f'yes, {pattern} matches {cert_info_str}')
                         current_date = datetime.now()
                         cert_expiry_date = datetime.strptime(cert_info['validity']['not_valid_after'],
                                                              '%Y-%m-%d %H:%M:%S')
                         days_to_expire = cert_expiry_date - current_date
                         results_dict = {'common_name': cert_common_name,
-                                        'vault_cert_path': rootpath,
+                                        'vault_cert_path': f'/{self.mount}{rootpath}',
                                         'cert_issue_date': cert_info['validity']['not_valid_before'],
                                         'cert_expiry_date': cert_info['validity']['not_valid_after'],
                                         'days_to_expire': days_to_expire.days
@@ -360,9 +350,14 @@ class VaultClient:
                         else:
                             results_dict['issuer'] = ""
 
+                        if 'alternativeNames' in cert_info['subject']:
+                            results_dict['alternativeNames'] = cert_info['subject']['alternativeNames']
+                        else:
+                            results_dict['alternativeNames'] = ""
+
                         searchresults.append(results_dict)
                     else:
-                        logger.trace(f'no, {pattern} not found in {subjectfields}')
+                        logger.trace(f'no, {pattern} not found {cert_info_path}')
         except requests.exceptions.ConnectionError as ve:
             logger.error(f'Failed to connect to {self.__url}: {ve}')
             sys.exit(2)
@@ -456,11 +451,4 @@ class VaultStoreEngine(StoreEngine):
 
             :return: list
         """
-        if pattern == "*":
-            searchpath = '/'
-        elif validators.domain(pattern):
-            searchpath = '/'.join(reversed(pattern.strip('/*').split('.'))) + "/"
-        else:
-            searchpath = f"client/{pattern}"
-
-        return self.__client.search(rootpath=searchpath, rootkey="", pattern=pattern, searchresults=[])
+        return self.__client.search(rootpath='/', rootkey="", pattern=pattern, searchresults=[])
