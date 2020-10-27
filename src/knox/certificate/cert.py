@@ -104,7 +104,7 @@ class Cert(StoreObject):
         """
         if 'commonName' in self._data['cert_info']['subject'] \
                 and len(self._data['cert_info']['subject']['commonName']) > 0:
-            self._common_name = self.valid_name(self._data['cert_info']['subject']['commonName'])
+            self._common_name = self._data['cert_info']['subject']['commonName']
         else:
             logger.warning(f'Certificate {self.name} does not have a value for common name.')
 
@@ -144,8 +144,9 @@ class Cert(StoreObject):
     def valid_name(cls, value: str) -> str:
         """Some engines might have problems with astrix, as they are used for glob searching and or RBAC.
         Replace it with the key word 'wildcard'. This does not affect the actual certificate."""
-        if validators.domain(value):
-            return value.replace('*', 'wildcard')
+        name = value.replace('*', 'wildcard')
+        if validators.domain(name):
+            return name
         else:
             return value
 
@@ -159,7 +160,7 @@ class Cert(StoreObject):
 
     @property
     def policy_mount(self) -> str:
-        if validators.domain(self._common_name):
+        if validators.domain(self._common_name.replace('*', 'wildcard')):
             self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/data"
         else:
             self._mount = f"{self._settings['KNOX_VAULT_MOUNT']}/data/client"
