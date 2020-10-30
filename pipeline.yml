@@ -22,7 +22,8 @@ stages:
   publish:
     artifact:
       sh:
-        - knox -v -l DEBUG store find \* | jq '.[] | select(.days_to_expire <= 90)'  
+#        - knox -v -l DEBUG store find \* | jq '.[] | select(.days_to_expire <= 90)'  
+        - knox -v -l DEBUG store find \* 
 
   cd:
     enabled: false
