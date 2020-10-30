@@ -8,6 +8,7 @@ buildInfo:
 install:
   - pip install -r src/knox/requirements.txt 
   - pip install knox
+  - yum install -y jq
   
 stages:
   verify:
