@@ -12,7 +12,7 @@ install:
 stages:
   verify:
     syntax:
-      - knox version
+      - knox --version
 
   security:
     veracodeRegex: (?!x)x
