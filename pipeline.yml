@@ -6,6 +6,7 @@ buildInfo:
   buildName: knox-report
 
 install:
+  - pip install -r src/knox/requirements.txt 
   - pip install knox
   
 stages:
