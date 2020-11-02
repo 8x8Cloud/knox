@@ -30,5 +30,9 @@ stages:
 
 notifications:
   email: lance.johnson@8x8.com
+  vo:
+    channel: "raven-test"
+
+
 
 
