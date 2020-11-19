@@ -1,0 +1,38 @@
+version: "0.1"
+
+image: docker.8x8.com:5000/8x8/hyperloop/centos7/python
+
+buildInfo:
+  buildName: knox-report
+
+install:
+  - pip install -r src/knox/requirements.txt 
+  - pip install knox
+  - yum install -y jq
+  
+stages:
+  verify:
+    syntax:
+      - knox --version
+
+  security:
+    veracodeRegex: (?!x)x
+    sonarRegex: (?!x)x
+    owaspDependencyRegex: (?!x)x
+
+  publish:
+    artifact:
+      sh:
+        - knox store find \* | jq '.[] | select(.days_to_expire <= 90)'  
+
+  cd:
+    enabled: false
+
+notifications:
+  email: lance.johnson@8x8.com
+  vo:
+    channel: "raven-test"
+
+
+
+
