@@ -27,7 +27,7 @@ stages:
         - faas-cli build -f ./stack.yml --shrinkwrap
       customMessage:
         - message: "Certificates expiring in less than 90 days {output}"
-          sh: "knox store find \* | jq '.[] | select(.days_to_expire <= 90)'"
+          sh: "knox store find \\* | jq '.[] | select(.days_to_expire <= 90)'"
           sendTo:
             voRoom: raven-test
           sendOnFail: false
