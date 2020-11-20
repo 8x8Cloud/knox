@@ -1,0 +1,25 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: https://openfaas.es.8x8.com
+functions:
+  fetching-expirycerts:
+    lang: dockerfile
+    handler: ./fetching-expirycerts
+    image: 868580389443.dkr.ecr.us-east-1.amazonaws.com/8x8/fetching-expirycerts:latest
+    environment:
+      exec_timeout: 240
+      KNOX_VAULT_URL: https://vault.es.8x8.com
+      KNOX_VAULT_MOUNT: certificate
+      KNOX_STORE_ENGINE: vault
+      KNOX_VAULT_SECRET_ID: REDACTED
+      KNOX_VAULT_APPROLE: REDACTED
+  expirycerts-webui:
+    lang: python3-flask-debian
+    handler: ./expirycerts-webui
+    image: 868580389443.dkr.ecr.us-east-1.amazonaws.com/8x8/expirycerts-webui:latest
+    environment:
+      read_timeout: 240
+      write_timeout: 240
+      exec_timeout: 240
+      OPENFAAS_HOST: https://openfaas.es.8x8.com
