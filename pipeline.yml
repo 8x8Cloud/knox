@@ -26,12 +26,12 @@ stages:
         - faas-cli template store pull python3-flask-debian
         - faas-cli template store pull dockerfile
         - faas-cli build -f ./stack.yml --shrinkwrap
-       customMessage:
-         message: "Certificates expiring in less than 90 days {{output}}"
-         sh: "knox store find \\* | jq '.[] | select(.days_to_expire <= 90)'"
-         sendTo:
-           voRoom: raven-test
-         sendOnFail: false
+      customMessage:
+        message: "Certificates expiring in less than 90 days {{output}}"
+        sh: "knox store find \\* | jq '.[] | select(.days_to_expire <= 90)'"
+        sendTo:
+          voRoom: raven-test
+        sendOnFail: false
       docker:
         - build 8x8/expirycerts-webui:latest ./functions/expiry-certificates/build/expirycerts-webui
         - build 8x8/fetching-expirycerts:latest ./functions/expiry-certificates/build/fetching-expirycerts
