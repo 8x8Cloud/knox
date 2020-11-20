@@ -30,7 +30,7 @@ stages:
         message: "Certificates expiring in less than 90 days {{output}}"
         sh: "knox store find \\* | jq '.[] | select(.days_to_expire <= 90)'"
         sendTo:
-          voRoom: raven-test
+          voChannel: raven-test
         sendOnFail: false
       docker:
         - build 8x8/expirycerts-webui:latest ./functions/expiry-certificates/build/expirycerts-webui
