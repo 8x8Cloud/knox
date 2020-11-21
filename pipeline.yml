@@ -28,13 +28,9 @@ stages:
         - push 8x8/fetching-expirycerts:latest
   acceptance:
     provision:
-      sh:
-        - pip install -r src/knox/requirements.txt
-        - pip install knox
-        - yum install -y jq
       customMessage:
         message: "Certificates expiring in less than 90 days \\n {{output}}"
-        sh: "knox store find \\* | jq -r '.[] | select(.days_to_expire <= 90).common_name'"
+        sh: "curl -s https://openfaas.es.8x8.com/function/fetching-expirycerts --data 'store find \*'| jq -r '.[] | select(.days_to_expire <= 90).common_name'"
         sendTo:
           voChannel: "Vault Cert Management (Knox)"
         sendOnFail: false
