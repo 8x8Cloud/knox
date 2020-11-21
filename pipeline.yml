@@ -30,7 +30,7 @@ stages:
     provision:
       customMessage:
         message: "Certificates expiring in less than 90 days \\n {{output}}"
-        sh: "curl -s https://openfaas.es.8x8.com/function/fetching-expirycerts --data 'store find \*'| jq -r '.[] | select(.days_to_expire <= 90).common_name'"
+        sh: "curl -s https://openfaas.es.8x8.com/function/fetching-expirycerts --data 'store find \\*'| jq -r '.[] | select(.days_to_expire <= 90).common_name'"
         sendTo:
           voChannel: "Vault Cert Management (Knox)"
         sendOnFail: false
