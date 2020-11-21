@@ -1,5 +1,7 @@
 version: "0.1"
 
+debug: true
+
 image: docker.8x8.com:5000/8x8/hyperloop/centos7/python
 
 buildInfo:
