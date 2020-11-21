@@ -38,7 +38,7 @@ stages:
 
 
 notifications:
-  email: certificate-mgmt@8x8.com@8x8.com
+  email: certificate-mgmt@8x8.com
   vo:
     channel: "Knox"
 
