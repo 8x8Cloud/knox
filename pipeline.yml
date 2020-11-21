@@ -26,8 +26,7 @@ stages:
         - build 8x8/fetching-expirycerts:latest ./functions/expiry-certificates/build/fetching-expirycerts
         - push 8x8/expirycerts-webui:latest
         - push 8x8/fetching-expirycerts:latest
-  production:
-    branch: feature/openfaas
+  acceptance:
     provision:
       sh:
         - pip install -r src/knox/requirements.txt
