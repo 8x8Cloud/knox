@@ -8,16 +8,9 @@ buildInfo:
   buildName: knox-report
 
 install:
-  - pip install -r src/knox/requirements.txt
-  - pip install knox
-  - yum install -y jq
   - ./functions/install_faas-cli.sh
 
 stages:
-  verify:
-    syntax:
-      - knox --version
-
   security:
     branch: ^none
 
@@ -35,6 +28,10 @@ stages:
         - push 8x8/fetching-expirycerts:latest
   production:
     provision:
+      sh:
+        - pip install -r src/knox/requirements.txt
+        - pip install knox
+        - yum install -y jq
       customMessage:
         message: "Certificates expiring in less than 90 days \\n {{output}}"
         sh: "knox store find \\* | jq -r '.[] | select(.days_to_expire <= 90).common_name'"
