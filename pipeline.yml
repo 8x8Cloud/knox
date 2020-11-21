@@ -41,9 +41,9 @@ stages:
 
 
 notifications:
-  email: certificate-mgmt@8x8.com
+  email: lance.johnson@8x8.com
   vo:
-    channel: "Knox"
+    channel: "raven-test"
 
 
 
