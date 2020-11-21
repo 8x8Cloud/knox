@@ -29,8 +29,8 @@ stages:
         - faas-cli template store pull dockerfile
         - faas-cli build -f ./stack.yml --shrinkwrap
       customMessage:
-        message: "Certificates expiring in less than 90 days {{output}}"
-        sh: "knox store find \\* | jq '.[] | select(.days_to_expire <= 90)'"
+        message: "Certificates expiring in less than 90 days \\n {{output}}"
+        sh: "knox store find \\* | jq -r '.[] | select(.days_to_expire <= 90).common_name'"
         sendTo:
           voChannel: raven-test
         sendOnFail: false
