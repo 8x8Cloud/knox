@@ -32,15 +32,14 @@ stages:
         message: "Certificates expiring in less than 90 days \\n {{output}} \\n For more information \\n https://openfaas.es.8x8.com/function/expirycerts-webui"
         sh: "curl -s https://openfaas.es.8x8.com/function/fetching-expirycerts --data 'store find \\*'| jq -r '.[] | select(.days_to_expire <= 90).common_name'"
         sendTo:
-          voChannel: "raven-test"
-          email: "lance@8x8.com"
+          voChannel: "Vault Cert Management (Knox)"
         sendOnFail: false
 
 
 notifications:
-  email: lance@8x8.com
+  email: knox@8x8.com
   vo:
-    channel: "raven-test"
+    channel: "Knox"
 
 
 
