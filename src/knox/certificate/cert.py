@@ -18,6 +18,7 @@ import ast
 import datetime
 import enum
 import json
+import re
 from binascii import hexlify
 
 import validators
@@ -50,6 +51,7 @@ class Cert(StoreObject):
     _common_name: str    #: Defaults to value from certificate
     _type: str           #: Certificate type identifier
     _jinja: Environment  #: Template engine
+    _owner: str
 
     class CertTypes(enum.Enum):
         PEM = 1
@@ -64,13 +66,14 @@ class Cert(StoreObject):
     DER = CertTypes.DER
     PFX = CertTypes.PFX
 
-    def __init__(self, settings: LazySettings, common_name=None) -> None:
+    def __init__(self, settings: LazySettings, owner, common_name=None, ) -> None:
         """Constructor for Cert"""
         self._settings = settings
         self._common_name = self.valid_name(common_name)
         self._body = ""
         self._info = ""
         self._type = ""
+        self._owner = owner
         super().__init__(name=self.name, path=self.path, body=self._body, info=self._info)
         self._jinja = Environment(loader=FileSystemLoader('templates'))
         self._tmpl_body = self._jinja.get_template('body_template.js')
@@ -112,7 +115,7 @@ class Cert(StoreObject):
         self._policy = self._tmpl_policy.render(cert=self)
         return self._policy
 
-    def load(self, pub: str, key: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
+    def load(self, pub: str, key: str,  owner: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
         """Read in components of a certificate, given filename paths for each
 
             :param pub: File name of public portion of key
@@ -123,6 +126,8 @@ class Cert(StoreObject):
             :type chain: str
             :param certtype: Enum of certificate types [PEM=1, DER=2]
             :type certtype: Enum
+            :param owner: Certificate owner email
+            :type owner: str
         """
         if certtype == Cert.PEM.name:
             self.load_x509(pub)
@@ -136,6 +141,7 @@ class Cert(StoreObject):
 
         self._data['cert_body'] = self._body['cert_body']
         self._data['cert_policy'] = self.policy()
+
 
         if not validators.domain(self.name):
             logger.info(f'{self.name} appears to be a client/server certificate not a web/https certificate')
@@ -194,6 +200,7 @@ class Cert(StoreObject):
         """Return the certificate issuer details"""
         return json.dumps({attr.oid._name: attr.value for attr in self._x509.issuer}, indent=8)
 
+
     def validity(self) -> str:
         """Return the certificates dates of validity"""
         cert = self._x509
@@ -223,6 +230,18 @@ class Cert(StoreObject):
             'serial_number': f'{cert.serial_number}',
             'key': key_info
         }, indent=8)
+
+    def isValid_owner(self) -> bool:
+        """Check if the owner email id is valid"""
+        valid_owner_domain = self._settings.as_dict()['CERTOWNER_EMAIL_DOMAIN']
+        if re.findall(valid_owner_domain, self._owner):
+            return True
+        else:
+            logger.error(f'Invalid certificate owner email..Allowed email suffix are [{valid_owner_domain}]')
+
+    def cert_owner(self) -> str:
+        """Return the certificate owner"""
+        return json.dumps(self._owner)
 
     def isValid(self) -> bool:
         """Check certificate validity period"""

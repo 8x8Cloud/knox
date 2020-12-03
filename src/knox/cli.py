@@ -74,9 +74,10 @@ def cli(ctx, verbose: bool = False, log: str = 'INFO', admin: bool = False):
 @click.option("--pub", help="Public key file")
 @click.option("--chain", help="Intermediate chain")
 @click.option("--key", help="Private key file")
+@click.option("--owner", help="Certificate owner email ")
 @click.pass_context
 @logger.catch()
-def cert(ctx, pub: str, key: str, type: str = 'PEM', chain: str = None):
+def cert(ctx, pub: str, owner: str, key: str, type: str = 'PEM', chain: str = None):
     """Certificate utilities.
 
     NAME is the common name for the certificate. i.e. www.example.com
@@ -84,6 +85,7 @@ def cert(ctx, pub: str, key: str, type: str = 'PEM', chain: str = None):
     ctx.obj['CERT_PUB'] = pub
     ctx.obj['CERT_CHAIN'] = chain
     ctx.obj['CERT_KEY'] = key
+    ctx.obj['CERT_OWNER'] = owner
     ctx.obj['CERT_TYPE'] = type.upper()
 
 
@@ -99,15 +101,18 @@ def cert_save(ctx, name):
     key = ctx.obj['CERT_KEY']
     chain = ctx.obj['CERT_CHAIN']
     certtype = ctx.obj['CERT_TYPE']
+    owner = ctx.obj['CERT_OWNER']
 
     knox = Knox(ctx)
-    certificate = Cert(knox.settings, common_name=name)
+    certificate = Cert(knox.settings, common_name=name, owner=owner)
     certificate.load(pub=pub,
                      key=key,
                      chain=chain,
-                     certtype=certtype)
+                     certtype=certtype,
+                     owner=owner)
     if certificate.isValid():
-        knox.store.save(certificate)
+        if certificate.isValid_owner():
+            knox.store.save(certificate)
     else:
         logger.error(f'{certificate.name} is invalid. Check validity Dates:\n {certificate.info()}')
         sys.exit(2)
