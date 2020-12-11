@@ -1,0 +1,75 @@
+{
+    "default": {
+        "ENVVAR_PREFIX_FOR_DYNACONF": "KNOX",
+        "INCLUDES_FOR_DYNACONF": "./config/*",
+        "KNOX_ENV": "default",
+        "KNOX_TEMP": "./tmp",
+        "KNOX_LOG_LEVEL": "DEBUG",
+        "KNOX_STORE_ENGINE": "vault",
+        "KNOX_VAULT_URL": "http://127.0.0.1:8200",
+        "KNOX_VAULT_TOKEN": "knox",
+        "KNOX_VAULT_MOUNT": "certificate",
+        "KNOX_VAULT_CLIENT_MAX_VERSIONS": "10",
+        "KNOX_VAULT_CLIENT_CAS": "True",
+        "KNOX_FILE_HOME": "./test",
+        "KNOX_CERTBOT_CONFIG": {
+            "KNOX_CERTBOT_ROOT_DIR": "/certdata",
+            "KNOX_CERTBOT_ACCOUNT_EMAIL": "entervalidemail@8x8.com"
+        },
+        "KNOX_DNS_METADATA": {
+            "dns-route53": {
+                "required_credentials": [
+                    "AWS_ACCESS_KEY_ID",
+                    "AWS_SECRET_ACCESS_KEY"
+                ],
+                "domains": [
+                    "acceptance.cloud.8x8.com",
+                    "staging.cloud.8x8.com",
+                    "k8stest.8x8cloud.com"
+                ]
+            },
+            "dns-cloudflare": {
+                "required_crednetials": [
+                    "CF_API_EMAIL",
+                    "CF_API_KEY"
+                ],
+                "domains": [
+                    "testdomain.8x8.com"
+                ]
+            },
+            "powerdns": {
+                "required_credentials": [
+                    "PDNS_API",
+                    "PDNS_KEY"
+                ],
+                "domains": [
+                    "8x8hosts.internal"
+                ]
+            }
+        }
+    },
+    "testing": {
+        "ENVVAR_PREFIX_FOR_DYNACONF": "KNOX",
+        "INCLUDES_FOR_DYNACONF": "./config/*",
+        "KNOX_ENV": "testing",
+        "KNOX_TEMP": "./tmp",
+        "KNOX_LOG_LEVEL": "DEBUG",
+        "KNOX_STORE_ENGINE": "vault",
+        "KNOX_VAULT_URL": "http://127.0.0.1:8200",
+        "KNOX_VAULT_TOKEN": "knox",
+        "KNOX_VAULT_MOUNT": "certificates",
+        "KNOX_VAULT_CLIENT_MAX_VERSIONS": "10",
+        "KNOX_VAULT_CLIENT_CAS": "True",
+        "KNOX_FILE_HOME": "./test"
+    },
+    "development": {
+        "ENVVAR_PREFIX_FOR_DYNACONF": "KNOX",
+        "INCLUDES_FOR_DYNACONF": "./config/*",
+        "KNOX_ENV": "development"
+    },
+    "production": {
+        "ENVVAR_PREFIX_FOR_DYNACONF": "KNOX",
+        "INCLUDES_FOR_DYNACONF": "./config/*",
+        "KNOX_ENV": "production"
+    }
+}
