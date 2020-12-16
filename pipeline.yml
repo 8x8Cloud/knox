@@ -33,6 +33,7 @@ stages:
         sh: "curl -s https://openfaas.es.8x8.com/function/fetching-expirycerts --data 'store find \\*'| jq -r '.[] | select(.days_to_expire <= 90).common_name'"
         sendTo:
           voChannel: "Vault Cert Management (Knox)"
+          email: lance.johnson@8x8.com
         sendOnFail: false
 
 
