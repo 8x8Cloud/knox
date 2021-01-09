@@ -1,3 +1,4 @@
 requests==2.25.0
 Jinja2==2.11.2
 pandas
+validators

@@ -23,9 +23,16 @@
          color: white;
      }
      div.div-issuers {
-       width: 48%;
-       float: left;
+       width: 100%;
        display: inline-block;
+       text-align: center;
+       margin-left: 102px;
+     }
+     div.div-certstype {
+       width: 100%;
+       display: inline-block;
+       text-align: center;
+       margin-left: 102px;
      }
      ul {
        list-style: none;
@@ -63,7 +70,7 @@
         <span class="navbar-brand mx-auto mb-0"><h1>Expiry Certificates</h1></span>
     </nav>
     <div class="container div-issuers">
-	 <h4 style="text-align: center; color: #DAA520; font-weight: bold;">Expiry Certificates per issuer</h4>
+	 <h4 style="class: bg-info; font-weight: bold;">Expiry Certificates per issuer</h4>
 	 <br/>
 	 <div class="progress" style="border-radius: 15px; height: 10px;">
 	  {% for issuer in issuers %}
@@ -76,6 +83,24 @@
 	      <li id="color-{{loop.index}}" class="issuers"><span>{{issuer.get('issuer')}} - {{issuer.get('properties')[2]}}%</span></li>
          {% endfor %}
 	 </ul>
+    </div>
+
+    <div class="container div-certstype">
+         <h4 style="class: bg-info; font-weight: bold;">Expiry Certificates per certificate type</h4>
+         <br/>
+         <div class="progress" style="border-radius: 15px; height: 10px;">
+          {% for certtype in expcertspercerttype %}
+          <div class="progress-bar" role="progressbar" style="width: {{certtype.get('properties')[2]}}%; background-color: {{certtype.get('properties')[0]}}" aria-valuenow="{{certtype.get('properties')[2]}}" aria-valuemin="0" aria-valuemax="100" data-toggle="tooltip" data-placement="top" title="{{certtype.get('certtype')}} - {{certtype.get('properties')[2]}}%"></div>
+          {% endfor %}
+         </div>
+         <ul>
+         {% for certtype in expcertspercerttype %}
+            {% if certtype.get('properties')[2] != 0 %}
+              <style>#color-{{loop.index}}:before { color: {{certtype.get('properties')[0]}}; }</style>
+              <li id="color-{{loop.index}}" class="issuers"><span>{{certtype.get('certtype')}} - {{certtype.get('properties')[2]}}%</span></li>
+            {% endif %}
+         {% endfor %}
+         </ul>
     </div>
 
     <div class="container mt-20" style="position:relative">
