@@ -75,8 +75,8 @@ class StoreObject:
     def md5(self) -> str:  # noqa F811
         return hashlib.md5(json.dumps(self._data, sort_keys=True).encode('utf-8')).hexdigest()
 
-    @staticmethod  # noqa F811
-    def md5(obj: {}) -> str:
+    @staticmethod
+    def md5(obj: {}) -> str: # noqa F811
         return hashlib.md5(json.dumps(obj, sort_keys=True).encode('utf-8')).hexdigest()
 
     @property

@@ -115,7 +115,7 @@ class Cert(StoreObject):
         self._policy = self._tmpl_policy.render(cert=self)
         return self._policy
 
-    def load(self, pub: str, key: str,  owner: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
+    def load(self, pub: str, key: str, owner: str, certtype: enum.Enum = PEM, chain: str = None) -> None:
         """Read in components of a certificate, given filename paths for each
 
             :param pub: File name of public portion of key
@@ -141,7 +141,6 @@ class Cert(StoreObject):
 
         self._data['cert_body'] = self._body['cert_body']
         self._data['cert_policy'] = self.policy()
-
 
         if not validators.domain(self.name):
             logger.info(f'{self.name} appears to be a client/server certificate not a web/https certificate')
@@ -199,7 +198,6 @@ class Cert(StoreObject):
     def issuer(self) -> str:
         """Return the certificate issuer details"""
         return json.dumps({attr.oid._name: attr.value for attr in self._x509.issuer}, indent=8)
-
 
     def validity(self) -> str:
         """Return the certificates dates of validity"""
