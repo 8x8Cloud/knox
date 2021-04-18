@@ -12,4 +12,4 @@ shortuuid==1.0.1
 requests==2.25.1
 validators==0.15.0
 certbot==1.14.0
-certbot-dns-route53==1.4.0
+certbot-dns-route53==1.14.0
