@@ -1,5 +1,5 @@
 boto3==1.14.2
-botocore==1.17.2
+botocore==1.20.53
 click==7.1.2
 config==0.5.0.post0
 cryptography==3.4.7
