@@ -66,7 +66,7 @@ class Cert(StoreObject):
     DER = CertTypes.DER
     PFX = CertTypes.PFX
 
-    def __init__(self, settings: LazySettings, owner, common_name=None, ) -> None:
+    def __init__(self, settings: LazySettings, owner: str = None, common_name: str = None) -> None:
         """Constructor for Cert"""
         self._settings = settings
         self._common_name = self.valid_name(common_name)
