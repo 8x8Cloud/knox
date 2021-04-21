@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='knox',
-    version='0.1.11',
+    version='0.1.12',
     license='Apache-2.0',
     description='Certificate management utilities with Vault backend',
     long_description='%s\n%s' % (
@@ -49,12 +49,9 @@ setup(
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python',
-        # 'Programming Language :: Python :: 2.7',
-        # 'Programming Language :: Python :: 3',
-        # 'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         # uncomment if you test on these interpreters:
@@ -69,7 +66,7 @@ setup(
         'Changelog': 'https://knox.readthedocs.io/en/latest/changelog.html',
         'Issue Tracker': 'https://github.com/8x8cloud/knox/issues',
     },
-    python_requires='>=3.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    python_requires='>=3.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*',
     keywords=[
         'vault','hashicorp','ssl','certificates'
     ],
