@@ -122,6 +122,17 @@ Development
 
 This project was initialized using a very cool python project templating tool called [cookiecutter-pylibrary](https://github.com/ionelmc/cookiecutter-pylibrary) from [Ionel Cristian Mărieș](https://github.com/ionelmc). Definitely check it out to see all the tools available and good usage docs.
 
+Python setup on a Mac using [pyenv](https://github.com/pyenv/pyenv#readme)::
+
+    # Pyenv for managing multiple versions of python
+    brew install pyenv
+
+    # Install all versions you want to test locally
+    pyenv install <version list>
+
+    # Enable the versions
+    pyenv local <version list>
+
 To execute everything run::
 
 	tox

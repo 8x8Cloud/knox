@@ -1,13 +1,9 @@
-
-#from click.testing import CliRunner
-
-#from knox import cli
+import knox
+import pytest
 
 
-def test_main():
-    pass
-#    runner = CliRunner()
-#    result = runner.invoke(main, [])
-#
-#    assert result.output == '()\n'
-#    assert result.exit_code == 0
+def test_vault_initialized(vault_initialized):
+    policies = vault_initialized.sys.list_policies()['data']['policies']
+    assert 'admin-policy' in policies
+    assert 'read-policy' in policies
+    assert 'user-policy' in policies
