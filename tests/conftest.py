@@ -38,19 +38,23 @@ def vault_container(docker_ip, docker_services):
 
 @pytest.fixture(scope="function")
 def vault_initialized(vault_container, docker_ip, shared_datadir):
+
+    # Apply Vault policies
     for filename in os.listdir(shared_datadir):
         if filename.startswith('cert_'):
             (policyname, ext) = os.path.splitext(filename)
-            print(f"loading {policyname}")
             contents = (shared_datadir / filename).read_text()
             vault_container.sys.create_or_update_policy(
                 name=policyname[5:],
                 policy=contents,
             )
 
+    # Enable Vault AppRole Auth Method
     vault_container.sys.enable_auth_method(
        method_type='approle',
     )
+
+    # Enable Secrets engine
     vault_container.sys.enable_secrets_engine(
        backend_type='kv',
        path='certificate',
@@ -59,6 +63,7 @@ def vault_initialized(vault_container, docker_ip, shared_datadir):
     approleid = ''
     approlesecret = ''
 
+    # Create Approle entity and associated secret
     for filename in os.listdir(shared_datadir):
         if filename.startswith('approle'):
             contents = (shared_datadir / 'approle-role-certificatestore.json').read_text()

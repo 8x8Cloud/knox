@@ -1,4 +1,4 @@
-import knox
+
 import pytest
 
 
