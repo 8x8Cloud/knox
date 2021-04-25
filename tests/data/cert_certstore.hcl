@@ -1,3 +1,3 @@
 path "certificate/*" {
-  capabilities = [ "create", "update" ]
+  capabilities = [ "list","read","create","update" ]
 }
