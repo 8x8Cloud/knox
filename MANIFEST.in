@@ -48,3 +48,6 @@ recursive-include docs *.txt
 
 # added by check-manifest
 include *.yml
+
+# added by check-manifest
+recursive-include tests *.py

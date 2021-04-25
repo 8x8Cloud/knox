@@ -9,6 +9,16 @@ from requests.exceptions import ConnectionError
 headers = {'Content-Type': 'application/json', 'X-Vault-Token': 'knox'}
 
 
+class KnoxTestFixtureData:
+    """Test setup object"""
+
+    def __init__(self):
+        """Constructor for KnoxTextFixtures"""
+
+
+knoxtestfixturedata = KnoxTestFixtureData
+
+
 def is_responsive(url):
     try:
         response = requests.get(url)
@@ -23,7 +33,7 @@ def vault_container(docker_ip, docker_services):
 
     # `port_for` takes a container port and returns the corresponding host port
     port = docker_services.port_for("vault", 8200)
-    vaulturl = "http://{}:{}".format(docker_ip, port)
+    vaulturl = f"http://{docker_ip}:{port}"
     docker_services.wait_until_responsive(
         timeout=30.0, pause=0.1, check=lambda: is_responsive(vaulturl)
     )
@@ -67,17 +77,19 @@ def vault_initialized(vault_container, docker_ip, shared_datadir):
     for filename in os.listdir(shared_datadir):
         if filename.startswith('approle'):
             contents = (shared_datadir / 'approle-role-certificatestore.json').read_text()
-            requests.post(url="http://127.0.0.1:8200/v1/auth/approle/role/certificatestore", headers=headers,
+            requests.post(url=f"http://{docker_ip}:8200/v1/auth/approle/role/certificatestore", headers=headers,
                           data=contents)
-            response = requests.get(url="http://127.0.0.1:8200/v1/auth/approle/role/certificatestore/role-id",
+            response = requests.get(url=f"http://{docker_ip}:8200/v1/auth/approle/role/certificatestore/role-id",
                                     headers=headers)
             approleid = json.loads(response.content.decode('utf-8'))['data']['role_id']
             print(f"app role id: {approleid}")
+            knoxtestfixturedata.approleid = approleid
             contents = (shared_datadir / 'approle-secret.json').read_text()
-            requests.post(url="http://127.0.0.1:8200/v1/auth/approle/role/certificatestore/custom-secret-id",
+            requests.post(url=f"http://{docker_ip}:8200/v1/auth/approle/role/certificatestore/custom-secret-id",
                           headers=headers, data=contents)
             approlesecret = json.loads(contents)['secret_id']
             print(f"app role secret: {approlesecret}")
+            knoxtestfixturedata.approlesecret = approlesecret
         else:
             pass
 
