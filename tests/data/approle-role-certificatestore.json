@@ -1,0 +1,11 @@
+{
+  "token_ttl": "5m",
+  "token_max_ttl": "30m",
+  "token_policies": ["certstore"],
+  "period": 0,
+  "bind_secret_id": true,
+  "token_num_uses": 1,
+  "secret_id_num_uses": 0,
+  "secret_id_ttl": 0,
+  "token_no_default_policy": true
+}

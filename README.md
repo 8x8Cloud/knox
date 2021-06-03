@@ -1,5 +1,5 @@
 
-What is Knox v0.1.11
+What is Knox v0.1.12
 ====================
 
 The name is derived from "Fort Knox" the safest place to store valuables in history. At least that is the myth. This tool or set of utilities is explicitly for managing TLS certificates including metadata about them and storing it in a backend.
@@ -121,6 +121,17 @@ Development
 ===========
 
 This project was initialized using a very cool python project templating tool called [cookiecutter-pylibrary](https://github.com/ionelmc/cookiecutter-pylibrary) from [Ionel Cristian Mărieș](https://github.com/ionelmc). Definitely check it out to see all the tools available and good usage docs.
+
+Python setup on a Mac using [pyenv](https://github.com/pyenv/pyenv#readme)::
+
+    # Pyenv for managing multiple versions of python
+    brew install pyenv
+
+    # Install all versions you want to test locally
+    pyenv install <version list>
+
+    # Enable the versions
+    pyenv local <version list>
 
 To execute everything run::
 

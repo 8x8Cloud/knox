@@ -161,3 +161,16 @@ modules.xml
 
 # End of https://www.gitignore.io/api/intellij+all
 
+
+# Temp directory
+tmp
+tmp/*
+
+# VSCode
+.vscode/*
+
+# direnv
+.envrc
+
+# pyenv
+.python-version

@@ -70,7 +70,7 @@ class VaultClient:
         token for every call to the API."""
         try:
             logger.trace(f'Connecting to Vault approle: {self.__approle} secret_id: {self.__secretid}')
-            resp = self.__vault_client.auth_approle(role_id=self.__approle, secret_id=self.__secretid, use_token=True)
+            resp = self.__vault_client.auth.approle.login(role_id=self.__approle, secret_id=self.__secretid, use_token=True)
             self.__token = resp['auth']['client_token']
             logger.trace(f'client_token: {self.__token}')
             self.__headers['X-Vault-Token'] = self.__token

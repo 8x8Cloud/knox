@@ -33,7 +33,7 @@ class Store:
         'aws': ACMStoreEngine
     }
 
-    def __init__(self, settings, engine_name: str = None) -> None:
+    def __init__(self, settings, engine_name: str = "vault") -> None:
         """Dynamically load StoreEngine type from .env via Dynaconf
         KNOX_STORE_ENGINE=[vault,file,aws]
 
