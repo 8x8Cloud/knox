@@ -1,70 +1,86 @@
-import cryptography.x509.base
+"""
+Apache Software License 2.0
+
+Copyright (c) 2020, 8x8, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License."""
+import knox
 import pytest
-import pathlib, sys
+import pathlib
+import sys
 import requests
 import hvac
-import os
-import time
 import json
-from requests.exceptions import ConnectionError
-
-import binascii
-import copy
 import datetime
-import ipaddress
 import os
-import typing
+import cryptography.x509.base
 
-import pytest
+from dynaconf import settings
 
-import pytz
-
-from cryptography import utils, x509
-from cryptography.exceptions import UnsupportedAlgorithm
-#from cryptography.hazmat.bindings._rust import asn1
+from requests.exceptions import ConnectionError
+from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import (
-    dh,
-    dsa,
-    ec,
-    ed25519,
-    ed448,
-    padding,
-    rsa,
-)
-from cryptography.hazmat.primitives.asymmetric.utils import (
-    decode_dss_signature,
-)
-from cryptography.x509.name import _ASN1Type
-from cryptography.x509.oid import (
-    AuthorityInformationAccessOID,
-    ExtendedKeyUsageOID,
-    ExtensionOID,
-    NameOID,
-    SignatureAlgorithmOID,
-    SubjectInformationAccessOID,
-)
-
-from .hazmat.primitives.fixtures_rsa import RSA_KEY_2048, RSA_KEY_512
-
+from cryptography.hazmat.primitives.asymmetric import dh, rsa
+from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends.openssl import backend as openssl_backend
+from .hazmat.primitives.fixtures_rsa import RSA_KEY_2048
 
+from click import Context, Command
 
 @pytest.fixture()
 def backend():
     return openssl_backend
 
 
-headers = {'Content-Type': 'application/json', 'X-Vault-Token': 'knox'}
-
-
 class KnoxTestFixtureData:
     """Test setup object"""
     _cert: cryptography.x509.base.Certificate
     _key: cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey
+    _knox: knox.Knox
+    _approleid: str
+    _approlesecret: str = "supersecret"
 
     def __init__(self):
         """Constructor for KnoxTextFixtures"""
+
+    def initialize(self) -> None:
+        cmd = Command
+        ctx = Context(cmd, obj={'VERBOSE': False,
+                                'LOG_LEVEL': "INFO",
+                                'ADMIN_MODE': False
+                                })
+        settings.VAULT_APPROLE = self._approleid
+        settings.VAULT_SECRET_ID = self._approlesecret
+        self._knox = knox.Knox(ctx)
+
+    @property
+    def approleid(self) -> str:
+        return self._approleid
+
+    @approleid.setter
+    def approleid(self, value: str) -> None:
+        self._approleid = value
+
+    @property
+    def approlesecret(self) -> str:
+        return self._approlesecret
+
+    @approlesecret.setter
+    def approlesecret(self, value: str) -> None:
+        self._approlesecret = value
+
+    def knox(self) -> knox.Knox:
+        return self._knox
 
     def gen_cert(self):
         issuer_private_key = RSA_KEY_2048.private_key(openssl_backend)
@@ -120,10 +136,6 @@ class KnoxTestFixtureData:
             )
 
         cert = builder.sign(issuer_private_key, hashes.SHA256(), openssl_backend)
-        # public:
-        # cert.public_bytes(encoding=serialization.Encoding.PEM)
-        # private:
-        # issuer_private_key.private_bytes(encoding=serialization.Encoding.PEM,format=serialization.PrivateFormat.TraditionalOpenSSL,encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"))
 
         self._cert = cert
         self._key = issuer_private_key
@@ -133,7 +145,9 @@ class KnoxTestFixtureData:
         return self._cert.public_bytes(encoding=serialization.Encoding.PEM)
 
     def cert_key(self):
-        return self._key.private_bytes(encoding=serialization.Encoding.PEM,format=serialization.PrivateFormat.TraditionalOpenSSL,encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"))
+        return self._key.private_bytes(encoding=serialization.Encoding.PEM,
+                                       format=serialization.PrivateFormat.TraditionalOpenSSL,
+                                       encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"))
 
 
 @pytest.fixture(scope="session")
@@ -161,27 +175,29 @@ def vault_container(docker_ip, docker_services):
         timeout=30.0, pause=0.1, check=lambda: is_responsive(vaulturl)
     )
 
-    client = hvac.Client(
-                url=vaulturl,
-                token='knox'
-                )
+    client = hvac.Client(url=vaulturl, token='knox')
 
     return client
 
 
 @pytest.fixture(scope="session")
 def vault_initialized(vault_container, docker_ip, ktfdata):
+    headers = {'Content-Type': 'application/json', 'X-Vault-Token': 'knox'}
 
     policies = vault_container.sys.list_policies()['data']['policies']
 
     cwd = pathlib.Path.cwd()
-    sys.path.append(str( cwd.parent/'data'))
+    if cwd.name.lower() != "tests":
+        datapath = f"{cwd}/tests/data"
+    else:
+        datapath = f"{cwd}/data"
+
     if "admin-policy" not in policies:
         # Apply Vault policies
-        for filename in os.listdir(path=f"{cwd}/tests/data"):
+        for filename in os.listdir(path=f"{datapath}"):
             if filename.startswith('cert_'):
                 (policyname, ext) = os.path.splitext(filename)
-                with open(f"{cwd}/tests/data/{filename}", mode="r") as contents:
+                with open(f"{datapath}/{filename}", mode="r") as contents:
                     vault_container.sys.create_or_update_policy(
                         name=policyname[5:],
                         policy=contents.read(),
@@ -204,7 +220,7 @@ def vault_initialized(vault_container, docker_ip, ktfdata):
         )
 
     # Create Approle entity and associated secret
-    with open(f"{cwd}/tests/data/approle-role-certificatestore.json", mode="r") as approlejson:
+    with open(f"{datapath}/approle-role-certificatestore.json", mode="r") as approlejson:
         requests.post(url=f"http://{docker_ip}:8200/v1/auth/approle/role/certificatestore", headers=headers,
                       data=approlejson.read())
         response = requests.get(url=f"http://{docker_ip}:8200/v1/auth/approle/role/certificatestore/role-id",
@@ -217,11 +233,10 @@ def vault_initialized(vault_container, docker_ip, ktfdata):
     approlesecret = "supersecret"
     ktfdata.approlesecret = approlesecret
 
-    vault_container.auth_approle(approleid, approlesecret)
+    vault_container.auth.approle.login(approleid, approlesecret)
 
-    client = hvac.Client(
-                url=f"http://{docker_ip}:8200",
-                token='knox'
-                )
+    client = hvac.Client(url=f"http://{docker_ip}:8200", token='knox')
+
+    ktfdata.initialize()
 
     return client
