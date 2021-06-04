@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 import os
 
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
@@ -13,19 +14,22 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
 ]
-source_suffix = '.rst'
+source_parsers = {
+    '.md': 'recommonmark.parser.CommonMarkParser'
+}
+source_suffix = ['.rst', '.md']
 master_doc = 'index'
 project = 'knox'
 year = '2020'
 author = 'Lance Johnson'
 copyright = '{0}, {1}'.format(year, author)
-version = release = '0.0.0'
+version = release = '0.1.12'
 
 pygments_style = 'trac'
 templates_path = ['.']
 extlinks = {
-    'issue': ('https://git.8x8.com/ljohnson/knox/issues/%s', '#'),
-    'pr': ('https://git.8x8.com/ljohnson/knox/pull/%s', 'PR #'),
+    'issue': ('https://github.com/8x8cloud/knox/issues/%s', '#'),
+    'pr': ('https://github.com/8x8cloud/knox/pull/%s', 'PR #'),
 }
 # on_rtd is whether we are on readthedocs.org
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'

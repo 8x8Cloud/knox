@@ -7,6 +7,7 @@ include .bumpversion.cfg
 include .coveragerc
 include .cookiecutterrc
 include .editorconfig
+include .env
 
 include AUTHORS.rst
 include CHANGELOG.rst
@@ -16,4 +17,37 @@ include README.rst
 
 include tox.ini .travis.yml .appveyor.yml .readthedocs.yml .pre-commit-config.yaml
 
-global-exclude *.py[cod] __pycache__/* *.so *.dylib
+global-exclude *.py[cod] __pycache__/* *.so *.dylib Dockerfile Dockerfile.* tmp/*
+
+# added by check_manifest.py
+recursive-include src *.py
+
+# added by check_manifest.py
+include *.md
+
+# added by check_manifest.py
+recursive-include examples *.pem *.cnf
+
+# added by check_manifest.py
+include *.txt
+
+# added by check_manifest.py
+include *.png
+
+# added by check_manifest.py
+recursive-include tests *.js
+
+# added by check_manifest.py
+recursive-include examples *.py
+
+# added by check_manifest.py
+recursive-include docs *.png
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs *.txt
+
+# added by check-manifest
+include *.yml
+
+# added by check-manifest
+recursive-include tests *.py

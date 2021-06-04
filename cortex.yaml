@@ -1,0 +1,14 @@
+---
+openapi: 3.0.1
+info:
+  title: auto_hashicorp_vault_knox
+  x-cortex-git:
+    github:
+      repository: 8x8/auto_hashicorp_vault_knox
+  x-cortex-tag: auto_hashicorp_vault_knox
+  x-cortex-link:
+  x-cortex-owners:
+    - type: EMAIL
+      email: res@8x8.com
+  x-cortex-service-groups:
+    - automation

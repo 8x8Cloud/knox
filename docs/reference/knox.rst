@@ -7,3 +7,11 @@ knox
 
 .. automodule:: knox
     :members:
+
+.. autoclass:: knox.Knox
+    :show-inheritance:
+    :members:
+    :private-members:
+    :inherited-members:
+    :undoc-members:
+
