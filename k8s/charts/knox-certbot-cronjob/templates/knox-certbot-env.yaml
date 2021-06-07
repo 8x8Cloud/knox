@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knox-certbot-env
+  namespace: default
+data:
+  KNOX_VAULT_URL: {{ default "https://vault.es.8x8.com" .Values.knox.vault_url | quote }}
+  KNOX_VAULT_MOUNT: {{ default "certificate" .Values.knox.vault_mount | quote }}
+  KNOX_STORE_ENGINE: {{ default "vault" .Values.knox.store_engine | quote }}
+  KNOX_FQDN: {{ required "Domain name of certificates required, .Values.knox.fqdn" .Values.knox.fqdn | quote }}
+  KNOX_EMAIL: {{ required "Email address for letsencrypt required, .Values.knox.email" .Values.knox.email | quote }}

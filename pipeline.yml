@@ -3,27 +3,20 @@ version: "0.1"
 image: docker.8x8.com:5000/8x8/hyperloop/centos7/python
 
 buildInfo:
-  buildName: knox-report
+  buildName: knox-cronjob
 
-install:
-  - pip install -r src/knox/requirements.txt 
-  - pip install knox
-  - yum install -y jq
-  
 stages:
   verify:
     syntax:
-      - knox --version
+      - helm template k8s/charts/knox-certbot-cronjob > /dev/null
 
   security:
-    veracodeRegex: (?!x)x
-    sonarRegex: (?!x)x
-    owaspDependencyRegex: (?!x)x
+    branch: ^none
 
   publish:
     artifact:
-      sh:
-        - knox store find \* | jq '.[] | select(.days_to_expire <= 90)'  
+      helm:
+        - push k8s/charts/knox-certbot-cronjob
 
   cd:
     enabled: false

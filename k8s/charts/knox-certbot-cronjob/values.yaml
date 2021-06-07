@@ -1,0 +1,17 @@
+ knox:
+   image:
+     url: "8x8cloud/knox"
+     tag: "certbot-route53-v0.1.11"
+   vault_url: "https://vault.es.8x8.com"
+   vault_mount: "certificate"
+   store_engine: "vault"
+   cron:
+     schedule: "0 0 * * *"
+   fqdn: "desired.domain.com"
+   email: "requiredfor@letsencrypt.org"
+   vault:
+     approle: "<Approle ID>"
+     approle_secret: "<Approle Secret>"
+   aws:
+     key: "<AWS_ACCESS_KEY_ID>"
+     secret: "<AWS_SECRET_ACCESS_KEY>"

@@ -1,0 +1,10 @@
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knox-certbot-entrypoint
+data:
+  entrypoint.sh: |-
+    #!/bin/sh
+    knox store find $KNOX_FQDN | jq '.[] | select(.days_to_expire <= 30)' | jq -r '.common_name' | xargs -I {} certbot certonly -n --agree-tos --dns-route53 -d {} --email $KNOX_EMAIL --server https://acme-v02.api.letsencrypt.org/directory --deploy-hook "knox cert --pub /etc/letsencrypt/live/{}/cert.pem --chain /etc/letsencrypt/live/{}/chain.pem --key /etc/letsencrypt/live/{}/privkey.pem save {}"
