@@ -28,6 +28,7 @@ FROM base as builder
 RUN apk update && apk upgrade
 RUN apk --no-cache add --virtual .buildset build-base gcc libffi-dev openssl-dev
 
+ENV CRYPTOGRAPHY_DONT_BUILD_RUST=1
 COPY /src/knox/requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 RUN pip install knox==0.1.14
