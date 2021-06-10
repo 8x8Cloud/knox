@@ -17,7 +17,7 @@ include README.rst
 
 include tox.ini .travis.yml .appveyor.yml .readthedocs.yml .pre-commit-config.yaml
 
-global-exclude *.py[cod] __pycache__/* *.so *.dylib Dockerfile Dockerfile.* tmp/*
+global-exclude *.py[cod] __pycache__/* *.so *.dylib Dockerfile Dockerfile.* tmp/* tests/*
 
 # added by check_manifest.py
 recursive-include src *.py
@@ -51,3 +51,8 @@ include *.yml
 
 # added by check-manifest
 recursive-include tests *.py
+
+# added by check-manifest
+include *.yaml
+recursive-include k8s *.yaml
+recursive-include k8s *.yml
