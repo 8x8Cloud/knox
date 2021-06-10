@@ -34,7 +34,7 @@ class TestKnoxCLIHelp:
     def test_version(self):
         runner = CliRunner()
         result = runner.invoke(cli, "--version")
-        assert "version 0.1.12" in result.stdout
+        assert "version 0.1.14" in result.stdout
 
     def test_cert(self):
         runner = CliRunner()

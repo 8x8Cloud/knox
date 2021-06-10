@@ -1,0 +1,32 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: knox-certbot
+  namespace: default
+spec:
+  schedule: {{ default "0 0 * * *" .Values.knox.cron.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: knox-certbot
+              image: {{ default "8x8cloud/knox" .Values.knox.image.url }}:{{default "certbot-route53-v0.1.11" .Values.knox.image.tag }}
+              envFrom:
+              - configMapRef:
+                  name: knox-certbot-env
+              - secretRef:
+                  name: knox-certbot-secrets
+              command:
+              - /bin/entrypoint.sh
+              volumeMounts:
+              - name: knox-certbot-entrypoint
+                mountPath: /bin/entrypoint.sh
+                readOnly: true
+                subPath: entrypoint.sh
+              imagePullPolicy: Always
+          volumes:
+          - name: knox-certbot-entrypoint
+            configmap:
+              defaultMode: 0700
+              name: knox-certbot-entrypoint
