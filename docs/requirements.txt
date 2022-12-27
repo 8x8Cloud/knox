@@ -13,7 +13,7 @@ hvac==0.10.9
 jinja2==2.11.3
 loguru==0.5.3
 requests==2.25.1
-setuptools==54.2.0
+setuptools==65.5.1
 shortuuid==1.0.1
 six==1.15.0
 validators==0.18.2
